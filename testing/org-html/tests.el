@@ -29,7 +29,13 @@
 
 ;;;_ , Requires
 
+(require 'org)
 (require 'org-html)
+(require 'org-id)
+(require 'emtest/runner/define)
+(require 'emtest/testhelp/mocks/filebuf)
+(require 'emtest/testhelp/tagnames)
+(require 'emtest/testhelp/standard)
 
 ;;;_. Body
 ;;;_ , org-id testhelp
@@ -205,7 +211,7 @@ tests from altering the outside state." )
 
 ;;;_ , Examples
 (defconst org-html:thd:examples
-   (emt:eg:define+ ;;xmp:tqu804919ze0
+   (emtg:define+ ;;xmp:tqu804919ze0
       ((project org)
 	 (library html)
 	 (subsection link-examples))
@@ -308,13 +314,13 @@ tests from altering the outside state." )
 
 (defun org-html:th:check-link-matches (expected)
    "Build a link text and check it against expected text.
-Sensitive to emt:eg narrowing."
+Sensitive to emtg narrowing."
    
    (assert
       (equal
 	 (apply #'org-html-make-link
 	     '(:html-extension "html")
-	    (emt:eg (type arglist)))
+	    (emtg (type arglist)))
 	 expected)
       t))
 
@@ -325,48 +331,48 @@ Sensitive to emt:eg narrowing."
       (:surrounders
 	 (list
 	    org-html:thd:isolation
-	     '(emt:eg:with org-html:thd:examples
+	     '(emtg:with org-html:thd:examples
 		((project org)
 		   (library html)
 		   (subsection link-examples))))))
    
    (nil
-      (emt:eg:map name name
+      (emtg:map name name
 	 (unless
 	    (eq name 'convertable)  
 	    (emt:doc "Proves: Example arglist gives the expected result.")
 	    (org-html:th:check-link-matches
-	       (emt:eg (type link-text))))))
+	       (emtg (type link-text))))))
    
    (nil
-      (emt:eg:narrow ((name convertable))
+      (emtg:narrow ((name convertable))
 	 (let
 	    (
 	       (org-export-html-link-org-files-as-html t)
 	       (org-html-cvt-link-fn nil))
 	    (emt:doc "Proves: Old org->html conversion works.")
 	    (org-html:th:check-link-matches
-		  (emt:eg (type link-text) (subname old-conversion))))))
+		  (emtg (type link-text) (subname old-conversion))))))
    
    (nil
-      (emt:eg:narrow ((name convertable))
+      (emtg:narrow ((name convertable))
 	 (let
 	    (
 	       (org-export-html-link-org-files-as-html nil)
 	       (org-html-cvt-link-fn #'org-html:th:cvt-fn))
 	    (emt:doc "Proves: New file->url conversion works.")
 	    (org-html:th:check-link-matches
-	       (emt:eg (type link-text) (subname new-conversion))))))
+	       (emtg (type link-text) (subname new-conversion))))))
    
    (nil
-      (emt:eg:narrow ((name convertable))
+      (emtg:narrow ((name convertable))
 	 (let
 	    (
 	       (org-export-html-link-org-files-as-html t)
 	       (org-html-cvt-link-fn #'org-html:th:cvt-fn))
 	    (emt:doc "Proves: New conversion has precedence over old.")
 	    (org-html:th:check-link-matches
-	       (emt:eg (type link-text) (subname new-conversion))))))
+	       (emtg (type link-text) (subname new-conversion))))))
    
 
 
@@ -404,7 +410,7 @@ Sensitive to emt:eg narrowing."
       (buffer-string)))
 ;;;_   , Examples
 (defconst org-html:stripwhite:thd:examples
-   (emt:eg:define+ ;;xmp:khpjmfi0aze0
+   (emtg:define+ ;;xmp:khpjmfi0aze0
       ((project org)(library html)
 	 (subsection org-html:th:strip-whitepadding)
 	 (type string)
@@ -419,15 +425,15 @@ Sensitive to emt:eg narrowing."
 ;;;_   , Tests
 (emt:deftest-3 org-html:th:strip-whitepadding
    (nil
-      (emt:eg:with org-html:stripwhite:thd:examples
+      (emtg:with org-html:stripwhite:thd:examples
 	 ((project org)(library html)
 	    (subsection org-html:th:strip-whitepadding)) 
-	 (emt:eg:map name name
+	 (emtg:map name name
 	    (emt:doc 
 	       "Check: The stripped string matches what's expected.")
 	    (assert
 	       (string=
-		  (org-html:th:strip-whitepadding (emt:eg))
+		  (org-html:th:strip-whitepadding (emtg))
 		  "ab"))))))
 
 ;;;_ , org-export-as-html
@@ -438,11 +444,11 @@ Sensitive to emt:eg narrowing."
 	 (list
 	    org-html:thd:isolation
 	    ;;Re-use the link examples.
-	    '(emt:eg:with org-html:thd:examples
+	    '(emtg:with org-html:thd:examples
 		((project org)(library html))))))
    (nil
-      (emt:eg:narrow ((subsection link-examples)) 
-	 (emt:eg:map name name
+      (emtg:narrow ((subsection link-examples)) 
+	 (emtg:map name name
 	    (when
 	       (and
 		  (not (eq name 'convertable))
@@ -450,12 +456,12 @@ Sensitive to emt:eg narrowing."
 		  ;;relative to `org-current-export-file', but for
 		  ;;buffer export there is none.
 		  (not (eq name 'type=id))  
-		  (emt:eg:boundp '(type src-text)))
+		  (emtg:boundp '(type src-text)))
 	       (emt:doc 
 		  "Situation: the only thing in the buffer is that link")
-	       (with-buffer-containing-object
+	       (emtb:with-buf
  		  (:string
-		     (emt:eg (type src-text)))
+		     (emtg (type src-text)))
 		  (org-mode)
 
 		  ;;This calculation has to be done outside the assert
@@ -474,7 +480,7 @@ Sensitive to emt:eg narrowing."
 		     (assert
 			(string=
 			   result
-			   (emt:eg (type link-text)))
+			   (emtg (type link-text)))
 			t)))))))
    ;;Could also use testpoints to test that we feed the link-builder
    ;;functions as expected.
