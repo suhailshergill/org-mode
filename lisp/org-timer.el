@@ -48,6 +48,12 @@ the value of the relative timer."
   :group 'org-time
   :type 'string)
 
+(defcustom org-timer-default-timer 0
+  "The default timer when a timer is set.
+When 0, the user is prompted for a value."
+  :group 'org-time
+  :type 'number)
+
 (defvar org-timer-start-hook nil
   "Hook run after relative timer is started.")
 
@@ -299,12 +305,37 @@ VALUE can be `on', `off', or `pause'."
       (message "%d minute(s) %d seconds left before next time out"
 	       rmins rsecs))))
 
+(defun bzg-test (&optional test)
+  (interactive "P")
+  test)
+
 ;;;###autoload
-(defun org-timer-set-timer (minutes)
-  "Set a timer."
-  (interactive "sTime out in (min)? ")
-  (if (not (string-match "[0-9]+" minutes))
-      (org-timer-show-remaining-time)
+(defun org-timer-set-timer (&optional opt)
+  "Prompt for a duration and set a timer.
+
+If `org-timer-default-timer' is not zero, suggest this value as
+the default duration for the timer.  If a timer is already set,
+prompt the use if she wants to replace it.
+
+Called with a numeric prefix argument, use this numeric value as
+the duration of the timer.
+
+Called with a `C-u' prefix argument, use `org-timer-default-timer' 
+without prompting the user for a duration.
+
+With two `C-u' prefix argument, use `org-timer-default-timer'
+without prompting the user for a duration and automatically
+replace any running timer."
+  (interactive "P")
+  (let ((minutes (or (and (numberp opt) (number-to-string opt))
+		     (and (listp opt) (not (null opt))
+			  (number-to-string org-timer-default-timer))
+		     (read-from-minibuffer 
+		      "How many minutes left? "
+		      (if (not (eq org-timer-default-timer 0))
+			  (number-to-string org-timer-default-timer))))))
+    (if (not (string-match "[0-9]+" minutes))
+	(org-timer-show-remaining-time)
     (let* ((mins (string-to-number (match-string 0 minutes)))
 	   (secs (* mins 60))
 	   (hl (cond
@@ -323,15 +354,21 @@ VALUE can be `on', `off', or `pause'."
 		 (org-get-heading))
 		(t (error "Not in an Org buffer"))))
 	   timer-set)
-      (if org-timer-current-timer
-	  (error "You cannot run several timers at the same time")
-	(setq org-timer-current-timer
-	      (run-with-timer
-	       secs nil `(lambda ()
-			   (setq org-timer-current-timer nil)
-			   (org-notify ,(format "%s: time out" hl) t)
-			   (run-hooks 'org-timer-done-hook))))
-	(run-hooks 'org-timer-set-hook)))))
+      (if (or (and org-timer-current-timer
+		   (or (equal opt '(16))
+		       (y-or-n-p "Replace current timer? ")))
+	      (not org-timer-current-timer))
+	  (progn
+	    (when org-timer-current-timer
+	      (cancel-timer org-timer-current-timer))
+	    (setq org-timer-current-timer
+		  (run-with-timer
+		   secs nil `(lambda ()
+			       (setq org-timer-current-timer nil)
+			       (org-notify ,(format "%s: time out" hl) t)
+			       (run-hooks 'org-timer-done-hook))))
+	    (run-hooks 'org-timer-set-hook))
+	(message "No timer set"))))))
 
 (provide 'org-timer)
 

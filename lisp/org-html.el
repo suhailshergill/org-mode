@@ -405,10 +405,10 @@ with a link to this URL."
 ;;; Variables, constants, and parameter plists
 
 (defvar org-export-html-preamble nil
-  "Preamble, to be inserted just before <body>.  Set by publishing functions.
+  "Preamble, to be inserted just after <body>.  Set by publishing functions.
 This may also be a function, building and inserting the preamble.")
 (defvar org-export-html-postamble nil
-  "Preamble, to be inserted just after </body>.  Set by publishing functions.
+  "Preamble, to be inserted just before </body>.  Set by publishing functions.
 This may also be a function, building and inserting the postamble.")
 (defvar org-export-html-auto-preamble t
   "Should default preamble be inserted?  Set by publishing functions.")
@@ -570,8 +570,8 @@ DESCP is the boolean of whether there was a link description.
 See variables `org-export-html-inline-images' and
 `org-export-html-inline-image-extensions'."
    (declare (special 
-	       org-export-html-inline-images 
-	       org-export-html-inline-image-extensions))
+	     org-export-html-inline-images 
+	     org-export-html-inline-image-extensions))
    (or 
       (eq t org-export-html-inline-images)
       (and 
@@ -640,7 +640,8 @@ MAY-INLINE-P allows inlining it as an image."
 	 (setq thefile 
 	    (let
 	       ((str (org-export-html-format-href thefile)))
-	       (if type
+	      (if (and type (not (string= "file" type))
+		       (string-match "^//" str))
 		  (concat type ":" str)
 		  str)))
 
@@ -913,7 +914,7 @@ lang=\"%s\" xml:lang=\"%s\">
 		      "")
 		  (or charset "iso-8859-1"))
 		 language language
-		 (org-html-expand title)
+		 title
 		 (or charset "iso-8859-1")
 		 date author description keywords
 		 style

@@ -105,6 +105,13 @@
 (require 'org-footnote)
 
 ;;;; Customization variables
+(defcustom org-clone-delete-id nil
+  "Remove ID property of clones of a subtree.
+When non-nil, clones of a subtree don't inherit the ID property.
+Otherwise they inherit the ID property with a new unique
+identifier."
+  :type 'boolean
+  :group 'org-id)
 
 ;;; Version
 
@@ -240,6 +247,7 @@ to add the symbol `xyz', and the package must have a call to
 	(const :tag "C  learn:             SuperMemo's incremental learning algorithm" org-learn)
 	(const :tag "C  mairix:            Hook mairix search into Org-mode for different MUAs" org-mairix)
 	(const :tag "C  mac-iCal           Imports events from iCal.app to the Emacs diary" org-mac-iCal)
+	(const :tag "C  mac-link-grabber   Grab links and URLs from various Mac applications" org-mac-link-grabber)
 	(const :tag "C  man:               Support for links to manpages in Org-mode" org-man)
 	(const :tag "C  mtags:             Support for muse-like tags" org-mtags)
 	(const :tag "C  panel:             Simple routines for us with bad memory" org-panel)
@@ -3169,7 +3177,13 @@ When nil, the \\name form remains in the buffer."
   :type 'boolean)
 
 (defvar org-emph-re nil
-  "Regular expression for matching emphasis.")
+  "Regular expression for matching emphasis.
+After a match, the match groups contain these elements:
+1  The character before the proper match, or empty at beginning of line
+2  The proper match, including the leading and trailing markers
+3  The leading marker like * or /, indicating the type of highlighting
+4  The text between the emphasis markers, not including the markers
+5  The character after the match, empty at the end of a line")
 (defvar org-verbatim-re nil
   "Regular expression for matching verbatim text.")
 (defvar org-emphasis-regexp-components) ; defined just below
@@ -3271,6 +3285,7 @@ example *bold*, _underlined_ and /italic/.  This variable sets the marker
 characters, the face to be used by font-lock for highlighting in Org-mode
 Emacs buffers, and the HTML tags to be used for this.
 For LaTeX export, see the variable `org-export-latex-emphasis-alist'.
+For DocBook export, see the variable `org-export-docbook-emphasis-alist'.
 Use customize to modify this, or restart Emacs after changing it."
   :group 'org-appearance
   :set 'org-set-emph-re
@@ -5963,6 +5978,7 @@ This means that the buffer may change while running BODY,
 but it also means that the buffer should stay alive
 during the operation, because otherwise all these markers will
 point nowhere."
+  (declare (indent 1))
   `(let ((data (org-outline-overlay-data ,use-markers)))
      (unwind-protect
 	 (progn
@@ -7144,6 +7160,9 @@ If yes, remember the marker and the distance to BEG."
 	      (if (org-on-heading-p) (backward-char 1))
 	      (point))))))
 
+(eval-when-compile
+  (defvar org-property-drawer-re))
+
 (defun org-clone-subtree-with-time-shift (n &optional shift)
   "Clone the task (subtree) at point N times.
 The clones will be inserted as siblings.
@@ -7170,7 +7189,7 @@ the following will happen:
 I this way you can spell out a number of instances of a repeating task,
 and still retain the repeater to cover future instances of the task."
   (interactive "nNumber of clones to produce: \nsDate shift per clone (e.g. +1w, empty to copy unchanged): ")
-  (let (beg end template task
+  (let (beg end template task idprop
 	    shift-n shift-what doshift nmin nmax (n-no-remove -1))
     (if (not (and (integerp n) (> n 0)))
 	(error "Invalid number of replications %s" n))
@@ -7187,15 +7206,11 @@ and still retain the repeater to cover future instances of the task."
     (setq nmin 1 nmax n)
     (org-back-to-heading t)
     (setq beg (point))
+    (setq idprop (org-entry-get nil "ID"))
     (org-end-of-subtree t t)
     (or (bolp) (insert "\n"))
     (setq end (point))
-    (setq template (let ((tmpl (buffer-substring beg end)))
-		     (with-temp-buffer
-		       (insert tmpl)
-		       (org-mode)
-		       (org-entry-delete nil "ID")
-		       (buffer-string))))
+    (setq template (buffer-substring beg end))
     (when (and doshift
 	       (string-match "<[^<>\n]+ \\+[0-9]+[dwmy][^<>\n]*>" template))
       (delete-region beg end)
@@ -7203,12 +7218,18 @@ and still retain the repeater to cover future instances of the task."
       (setq nmin 0 nmax (1+ nmax) n-no-remove nmax))
     (goto-char end)
     (loop for n from nmin to nmax do
-	  (if (not doshift)
-	      (setq task template)
-	    (with-temp-buffer
-	      (insert template)
-	      (org-mode)
-	      (goto-char (point-min))
+	  ;; prepare clone
+	  (with-temp-buffer
+	    (insert template)
+	    (org-mode)
+	    (goto-char (point-min))
+	    (and idprop (if org-clone-delete-id
+			    (org-entry-delete nil "ID")
+			  (org-id-get-create t)))
+	    (while (re-search-forward org-property-drawer-re nil t)
+	      (org-remove-empty-drawer-at "PROPERTIES" (point)))
+	    (goto-char (point-min))
+	    (when doshift
 	      (while (re-search-forward org-ts-regexp-both nil t)
 		(org-timestamp-change (* n shift-n) shift-what))
 	      (unless (= n n-no-remove)
@@ -7217,8 +7238,8 @@ and still retain the repeater to cover future instances of the task."
 		  (save-excursion
 		    (goto-char (match-beginning 0))
 		    (if (looking-at "<[^<>\n]+\\( +\\+[0-9]+[dwmy]\\)")
-			(delete-region (match-beginning 1) (match-end 1))))))
-	      (setq task (buffer-string))))
+			(delete-region (match-beginning 1) (match-end 1)))))))
+	    (setq task (buffer-string)))
 	  (insert task))
     (goto-char beg)))
 
@@ -7942,7 +7963,9 @@ For file links, arg negates `org-context-in-file-links'."
 		   (get-text-property (point) 'org-marker))))
 	(when m
 	  (org-with-point-at m
-	    (call-interactively 'org-store-link)))))
+	    (if (interactive-p)
+		(call-interactively 'org-store-link)
+	      (org-store-link nil))))))
 
      ((eq major-mode 'calendar-mode)
       (let ((cd (calendar-cursor-to-date)))
@@ -8253,6 +8276,12 @@ This is the list that is used before handing over to the browser.")
 
 (defun org-fixup-message-id-for-http (s)
   "Replace special characters in a message id, so it can be used in an http query."
+  (when (string-match "%" s)
+    (setq s (mapconcat (lambda (c)
+			 (if (eq c ?%)
+			     "%25"
+			   (char-to-string c)))
+		       s "")))
   (while (string-match "<" s)
     (setq s (replace-match "%3C" t t s)))
   (while (string-match ">" s)
@@ -9506,13 +9535,14 @@ on the system \"/user@host:\"."
 
 (defun org-refile-cache-check-set (set)
   "Check if all the markers in the cache still have live buffers."
-  (catch 'exit
-    (while set
-      (if (not (marker-buffer (nth 3 (pop set))))
-	  (progn
-	    (message "not found") (sit-for 3)
-	    (throw 'exit nil))))
-    t))
+  (let (marker)
+    (catch 'exit
+      (while (and set (setq marker (nth 3 (pop set))))
+	;; if org-refile-use-outline-path is 'file, marker may be nil
+	(when (and marker (null (marker-buffer marker)))
+	  (message "not found") (sit-for 3)
+	  (throw 'exit nil)))
+      t)))
 
 (defun org-refile-cache-put (set &rest identifiers)
   "Push the refile targets SET into the cache, under IDENTIFIERS."
@@ -9526,7 +9556,7 @@ on the system \"/user@host:\"."
   "Retrieve the cached value for refile targets given by IDENTIFIERS."
   (cond
    ((not org-refile-cache) nil)
-   ((not org-refile-use-cache) (org-refile-cache-clear))
+   ((not org-refile-use-cache) (org-refile-cache-clear) nil)
    (t
     (let ((set (cdr (assoc (sha1 (prin1-to-string identifiers))
 			   org-refile-cache))))
@@ -9630,7 +9660,8 @@ on the system \"/user@host:\"."
 		     (when (= (point) pos0)
 		       ;; verification function has not moved point
 		       (goto-char (point-at-eol))))))))
-	    (org-refile-cache-put tgs (buffer-file-name) descre)
+	    (when org-refile-use-cache
+	      (org-refile-cache-put tgs (buffer-file-name) descre))
 	    (setq targets (append tgs targets))
 	    ))))
     (message "Getting targets...done")
@@ -9645,9 +9676,10 @@ on the system \"/user@host:\"."
 
 (defun org-get-outline-path (&optional fastp level heading)
   "Return the outline path to the current entry, as a list.
-The parameters FASTP, LEVEL, and HEADING are for use be a scanner
+
+The parameters FASTP, LEVEL, and HEADING are for use by a scanner
 routine which makes outline path derivations for an entire file,
-avoiding backtracing."
+avoiding backtracing.  Refile target collection makes use of that."
   (if fastp
       (progn
 	(if (> level 19)
@@ -11360,7 +11392,7 @@ be removed."
 	      (end-of-line 1))
 	    (goto-char (point-min))
 	    (widen)
-	    (if (and (looking-at "[ \t]+\n")
+	    (if (and (looking-at "[ \t]*\n")
 		     (equal (char-before) ?\n))
 		(delete-region (1- (point)) (point-at-eol)))
 	    ts))))))
@@ -11661,7 +11693,7 @@ that the match should indeed be shown."
     cnt))
 
 (defun org-show-context (&optional key)
-  "Make sure point and context and visible.
+  "Make sure point and context are visible.
 How much context is shown depends upon the variables
 `org-show-hierarchy-above', `org-show-following-heading'. and
 `org-show-siblings'."
@@ -13470,7 +13502,8 @@ in the current file."
   "In the current entry, delete PROPERTY."
   (interactive
    (let* ((completion-ignore-case t)
-	  (prop (org-icompleting-read "Property: " (org-entry-properties nil 'standard))))
+	  (prop (org-icompleting-read "Property: "
+				      (org-entry-properties nil 'standard))))
      (list prop)))
   (message "Property %s %s" property
 	   (if (org-entry-delete nil property)
@@ -13583,6 +13616,48 @@ completion."
     (beginning-of-line 1)
     (skip-chars-forward " \t")
     (run-hook-with-args 'org-property-changed-functions key nval)))
+
+(defun org-find-olp (path)
+  "Return a marker pointing to the entry at outline path OLP.
+If anything goes wrong, throw an error.
+You can wrap this call to cathc the error like this:
+
+  (condition-case msg
+      (org-mobile-locate-entry (match-string 4))
+    (error (nth 1 msg)))
+
+The return value will then be either a string with the error message,
+or a marker if everyhing is OK."
+  (let* ((file (pop path))
+	 (buffer (find-file-noselect file))
+	 (level 1)
+	 (lmin 1)
+	 (lmax 1)
+	 limit re end found pos heading cnt)
+    (unless buffer (error "File not found :%s" file))
+    (with-current-buffer buffer
+      (save-excursion
+	(save-restriction
+	  (widen)
+	  (setq limit (point-max))
+	  (goto-char (point-min))
+	  (while (setq heading (pop path))
+	    (setq re (format org-complex-heading-regexp-format
+			     (regexp-quote heading)))
+	    (setq cnt 0 pos (point))
+	    (while (re-search-forward re end t)
+	      (setq level (- (match-end 1) (match-beginning 1)))
+	      (if (and (>= level lmin) (<= level lmax))
+		  (setq found (match-beginning 0) cnt (1+ cnt))))
+	    (when (= cnt 0) (error "Heading not found on level %d: %s"
+				   lmax heading))
+	    (when (> cnt 1) (error "Heading not unique on level %d: %s"
+				   lmax heading))
+	    (goto-char found)
+	    (setq lmin (1+ level) lmax (+ lmin (if org-odd-levels-only 1 0)))
+	    (setq end (save-excursion (org-end-of-subtree t t))))
+	  (when (org-on-heading-p)
+	    (move-marker (make-marker) (point))))))))
 
 (defun org-find-entry-with-id (ident)
   "Locate the entry that contains the ID property with exact value IDENT.
@@ -15010,6 +15085,13 @@ used by the agenda files.  If ARCHIVE is `ifmode', do this only if
 	      (and (eq archives 'ifmode) (eq org-agenda-archives-mode t)))
       (setq files (org-add-archive-files files)))
     files))
+
+(defun org-agenda-file-p (&optional file)
+  "Return non-nil, if FILE is an agenda file.
+If FILE is omitted, use the file associated with the current
+buffer."
+  (member (or file (buffer-file-name))
+          (org-agenda-files t)))
 
 (defun org-edit-agenda-file-list ()
   "Edit the list of agenda files.
@@ -16742,7 +16824,9 @@ Also updates the keyword regular expressions."
   "If this is a Note buffer, abort storing the note.  Else call `show-branches'."
   (interactive)
   (if (not org-finish-function)
-      (call-interactively 'show-branches)
+      (progn
+	(hide-subtree)
+	(call-interactively 'show-branches))
     (let ((org-note-abort t))
       (funcall org-finish-function))))
 
@@ -17151,7 +17235,7 @@ See the individual commands for more information."
       :style toggle :selected (and (boundp 'org-export-with-LaTeX-fragments)
 				   org-export-with-LaTeX-fragments)]
      "--"
-     ["Template for BEAMER" org-beamer-settings-template t])
+     ["Template for BEAMER" org-insert-beamer-options-template t])
     "--"
     ("MobileOrg"
      ["Push Files and Views" org-mobile-push t]

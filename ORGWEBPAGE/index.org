@@ -117,10 +117,9 @@ a look at our [[http://orgmode.org/worg/org-quotes.php][collected quotes about O
 #+ATTR_HTML: style="float:right;"
   [[http://mobileorg.ncogni.to/][http://mobileorg.ncogni.to/images/screenshot-browse.png]]
 
+- <2010-05-21 Fri>: iPhone App [[http://mobileorg.ncogni.to/][MobileOrg]] version 1.2 available
 - <2010-04-06 Tue>: Release 6.35
 - <2010-01-10 Sun>: Release 6.34
-- <2009-12-15 Tue>: iPhone App [[http://mobileorg.ncogni.to/][MobileOrg]] version 1.1 available
-- <2009-11-13 Fri>: Release 6.33
 
 * Current Version (6.36c)
 
@@ -190,7 +189,6 @@ and corresponding to the latest git version.
 
 * Links
 
-
 ** Talks about Org-mode
    Check out the [[file:talks/index.html#sec-1][Google Tech Talk]] about Org-mode, or another talk
    given at the [[file:talks/index.html#sec-2][Max Planck Institute for Neurological Research]]
@@ -216,6 +214,13 @@ and corresponding to the latest git version.
 </div></form>
 #+END_HTML
 
+** MobileOrg
+   [[http://mobileorg.ncogni.to/][MobileOrg]] is an excellent open source application to read and
+   change Org-files on the road, using an iPhone, and then sync the
+   changes back to your computer.  Check out Richard's [[http://mobileorg.ncogni.to/][page]].
+
+   Matt Jones is currently developing a compatible application for
+   Android, and this project is [[http://wiki.github.com/matburt/mobileorg-android/][hosted here]].
 ** Worg
 
 [[http://orgmode.org/worg/][Worg]], created by [[http://www.cognition.ens.fr/~guerry/][Bastien Guerry]], is a setup to allow users to jointly

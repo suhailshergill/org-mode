@@ -246,7 +246,7 @@ block."
           (if (and (not arg) new-hash (equal new-hash old-hash))
               (save-excursion ;; return cached result
                 (goto-char (org-babel-where-is-src-block-result nil info))
-                (move-end-of-line 1) (forward-char 1)
+                (end-of-line 1) (forward-char 1)
                 (setq result (org-babel-read-result))
                 (message (replace-regexp-in-string "%" "%%"
                                                    (format "%S" result))) result)
@@ -305,7 +305,7 @@ session.  After loading the body this pops open the session."
     (pop-to-buffer
      (funcall (intern (concat "org-babel-load-session:" lang))
               session body params))
-    (move-end-of-line 1)))
+    (end-of-line 1)))
 
 (defun org-babel-switch-to-session (&optional arg info)
   "Switch to the session of the current source-code block.
@@ -333,7 +333,7 @@ of the source block to the kill ring."
     (pop-to-buffer
      (funcall (intern (format "org-babel-%s-initiate-session" lang))
               session params))
-    (move-end-of-line 1)))
+    (end-of-line 1)))
 
 (defalias 'org-babel-pop-to-session 'org-babel-switch-to-session)
 
@@ -349,7 +349,7 @@ results already exist."
       (goto-char (or (and (not re-run) (org-babel-where-is-src-block-result))
                      (progn (org-babel-execute-src-block)
                             (org-babel-where-is-src-block-result))))
-      (move-end-of-line 1) (forward-char 1)
+      (end-of-line 1) (forward-char 1)
       ;; open the results
       (if (looking-at org-bracket-link-regexp)
           ;; file results
@@ -371,12 +371,14 @@ results already exist."
 the current buffer."
   (interactive "P")
   (save-excursion
-    (goto-char (point-min))
-    (while (re-search-forward org-babel-src-block-regexp nil t)
-      (let ((pos-end (match-end 0)))
-	(goto-char (match-beginning 0))
-	(org-babel-execute-src-block arg)
-	(goto-char pos-end)))))
+    (org-save-outline-visibility t
+      (goto-char (point-min))
+      (show-all)
+      (while (re-search-forward org-babel-src-block-regexp nil t)
+	(let ((pos-end (match-end 0)))
+	  (goto-char (match-beginning 0))
+	  (org-babel-execute-src-block arg)
+	  (goto-char pos-end))))))
 
 (defun org-babel-execute-subtree (&optional arg)
   "Call `org-babel-execute-src-block' on every source block in
@@ -560,30 +562,40 @@ with C-c C-c."
 (defmacro org-babel-map-source-blocks (file &rest body)
   "Evaluate BODY forms on each source-block in FILE."
   (declare (indent 1))
-  `(let ((visited-p (get-buffer (file-name-nondirectory ,file))))
+  `(let ((visited-p (get-file-buffer (expand-file-name ,file)))
+	 to-be-removed)
      (save-window-excursion
-       (find-file ,file) (goto-char (point-min))
+       (find-file ,file)
+       (setq to-be-removed (current-buffer))
+       (goto-char (point-min))
        (while (re-search-forward org-babel-src-block-regexp nil t)
          (goto-char (match-beginning 0))
          (save-match-data ,@body)
          (goto-char (match-end 0))))
-     (unless visited-p (kill-buffer (file-name-nondirectory ,file)))))
+     (unless visited-p
+       (kill-buffer to-be-removed))))
 
-(defun org-babel-params-from-properties ()
+(defun org-babel-params-from-properties (&optional lang)
   "Return an association list of any source block params which
 may be specified in the properties of the current outline entry."
   (save-match-data
-    (delq nil
-          (mapcar
-           (lambda (header-arg)
-             (let ((val (or (condition-case nil
-                                (org-entry-get (point) header-arg t)
-                              (error nil))
-                            (cdr (assoc header-arg org-file-properties)))))
-               (when val
-                 ;; (message "prop %s=%s" header-arg val) ;; debugging
-                 (cons (intern (concat ":" header-arg)) val))))
-           (mapcar 'symbol-name org-babel-header-arg-names)))))
+    (let (val sym)
+      (delq nil
+	    (mapcar
+	     (lambda (header-arg)
+	       (and (setq val
+			  (or (condition-case nil
+				  (org-entry-get (point) header-arg t)
+				(error nil))
+			      (cdr (assoc header-arg org-file-properties))))
+		    (cons (intern (concat ":" header-arg)) val)))
+	     (mapcar
+	      'symbol-name
+	      (append
+	       org-babel-header-arg-names
+	       (progn
+		 (setq sym (intern (concat "org-babel-header-arg-names:" lang)))
+		 (and (boundp sym) (eval sym))))))))))
 
 (defun org-babel-parse-src-block-match ()
   (let* ((lang (org-babel-clean-text-properties (match-string 1)))
@@ -601,7 +613,7 @@ may be specified in the properties of the current outline entry."
               (buffer-string)))
 	  (org-babel-merge-params
 	   org-babel-default-header-args
-           (org-babel-params-from-properties)
+           (org-babel-params-from-properties lang)
 	   (if (boundp lang-headers) (eval lang-headers) nil)
 	   (org-babel-parse-header-arguments
             (org-babel-clean-text-properties (or (match-string 3) ""))))
@@ -615,7 +627,7 @@ may be specified in the properties of the current outline entry."
            (org-babel-clean-text-properties (match-string 5)))
           (org-babel-merge-params
            org-babel-default-inline-header-args
-           (org-babel-params-from-properties)
+           (org-babel-params-from-properties lang)
            (if (boundp lang-headers) (eval lang-headers) nil)
            (org-babel-parse-header-arguments
             (org-babel-clean-text-properties (or (match-string 4) "")))))))
@@ -766,8 +778,8 @@ If the point is not on a source block then return nil."
         (re-search-backward "^[ \t]*#\\+begin_src" nil t) (setq top (point))
         (re-search-forward "^[ \t]*#\\+end_src" nil t) (setq bottom (point))
         (< top initial) (< initial bottom)
-        (goto-char top) (move-beginning-of-line 1)
-        (looking-at org-babel-src-block-regexp)
+        (progn (goto-char top) (beginning-of-line 1)
+	       (looking-at org-babel-src-block-regexp))
         (point))))))
 
 (defun org-babel-goto-named-source-block (&optional name)
@@ -800,7 +812,7 @@ buffer or nil if no such result exists."
     (when (re-search-forward
            (concat org-babel-result-regexp
                    "[ \t]" (regexp-quote name) "[ \t\n\f\v\r]") nil t)
-      (move-beginning-of-line 0) (point))))
+      (beginning-of-line 0) (point))))
 
 (defun org-babel-where-is-src-block-result (&optional insert info hash)
   "Return the point at the beginning of the result of the current
@@ -816,13 +828,13 @@ following the source block."
       (when head (goto-char head))
       (or (and name (org-babel-find-named-result name))
           (and (or on-lob-line (re-search-forward "^[ \t]*#\\+end_src" nil t))
-               (progn (move-end-of-line 1)
+               (progn (end-of-line 1)
 		      (if (eobp) (insert "\n") (forward-char 1))
 		      (setq end (point))
                       (or (and (not name)
 			       (progn ;; unnamed results line already exists
 				 (re-search-forward "[^ \f\t\n\r\v]" nil t)
-				 (move-beginning-of-line 1)
+				 (beginning-of-line 1)
                                  (looking-at
                                   (concat org-babel-result-regexp "\n"))))
 			  ;; or (with optional insert) back up and
@@ -835,7 +847,7 @@ following the source block."
                                             (when hash (concat "["hash"]"))
                                             ":"
                                             (when name (concat " " name)) "\n"))
-                            (move-beginning-of-line 0)
+                            (beginning-of-line 0)
                             (if hash (org-babel-hide-hash)) t)))
                (point))))))
 
@@ -1026,8 +1038,7 @@ directory then expand relative links."
 (defun org-babel-examplize-region (beg end &optional results-switches)
   "Comment out region using the ': ' org example quote."
   (interactive "*r")
-  (let ((size (abs (- (line-number-at-pos end)
-		      (line-number-at-pos beg)))))
+  (let ((size (count-lines beg end)))
     (save-excursion
       (cond ((= size 0)
 	     (error (concat "This should be impossible:"
@@ -1035,7 +1046,7 @@ directory then expand relative links."
 	    ((< size org-babel-min-lines-for-block-output)
 	     (goto-char beg)
 	     (dotimes (n size)
-	       (move-beginning-of-line 1) (insert ": ") (forward-line 1)))
+	       (beginning-of-line 1) (insert ": ") (forward-line 1)))
 	    (t
 	     (goto-char beg)
 	     (insert (if results-switches
@@ -1192,7 +1203,7 @@ block but are passed literally to the \"example-block\"."
             (setq prefix
                   (buffer-substring (match-beginning 0)
                                     (save-excursion
-                                      (move-beginning-of-line 1) (point)))))
+                                      (beginning-of-line 1) (point)))))
           ;; add interval to new-body (removing noweb reference)
           (goto-char (match-beginning 0))
           (nb-add (buffer-substring index (point)))
@@ -1235,7 +1246,8 @@ block but are passed literally to the \"example-block\"."
 
 (defun org-babel-clean-text-properties (text)
   "Strip all properties from text return."
-  (set-text-properties 0 (length text) nil text) text)
+  (when text
+    (set-text-properties 0 (length text) nil text) text))
 
 (defun org-babel-strip-protective-commas (body)
   "Strip protective commas from bodies of source blocks."
@@ -1259,7 +1271,7 @@ This is taken almost directly from `org-read-prop'."
 
 (defun org-babel-number-p (string)
   "Return t if STRING represents a number"
-  (if (and (string-match "^-?[[:digit:]]*\\.?[[:digit:]]*$" string)
+  (if (and (string-match "^-?[0-9]*\\.?[0-9]*$" string)
            (= (match-end 0) (length string)))
       (string-to-number string)))
 
@@ -1412,7 +1424,8 @@ specifies the value of ERROR-BUFFER."
 	 (if error-buffer
 	     (make-temp-file
 	      (expand-file-name "scor"
-				(or small-temporary-file-directory
+				(or (unless (featurep 'xemacs)
+				      small-temporary-file-directory)
 				    temporary-file-directory)))
 	   nil))
 	exit-status)
