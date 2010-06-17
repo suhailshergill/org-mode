@@ -34,6 +34,7 @@
 (org-export-blocks-add-block '(src org-babel-exp-src-blocks nil))
 (add-to-list 'org-export-interblocks '(src org-babel-exp-inline-src-blocks))
 (add-to-list 'org-export-interblocks '(lob org-babel-exp-lob-one-liners))
+(add-hook 'org-export-blocks-postblock-hook 'org-exp-res/src-name-cleanup)
 
 (defvar org-babel-function-def-export-keyword "function"
   "When exporting a source block function, this keyword will
@@ -76,7 +77,16 @@ none ----- do not display either code or results upon export"
   (when (member (first headers) org-babel-interpreters)
     (save-excursion
       (goto-char (match-beginning 0))
-      (org-babel-exp-do-export (org-babel-get-src-block-info) 'block))))
+      (let* ((info (org-babel-get-src-block-info))
+	     (params (third info)))
+	;; expand noweb references in the original file
+	(setf (second info)
+	      (if (and (cdr (assoc :noweb params))
+		       (string= "yes" (cdr (assoc :noweb params))))
+		  (org-babel-expand-noweb-references
+		   info (get-file-buffer org-current-export-file))
+		(second info)))
+	(org-babel-exp-do-export info 'block)))))
 
 (defun org-babel-exp-inline-src-blocks (start end)
   "Process inline src blocks between START and END for export.
@@ -88,10 +98,47 @@ options and are taken from `org-babel-defualt-inline-header-args'."
     (while (and (< (point) end)
                 (re-search-forward org-babel-inline-src-block-regexp end t))
       (let* ((info (save-match-data (org-babel-parse-inline-src-block-match)))
-             (replacement (save-match-data
-                            (org-babel-exp-do-export info 'inline))))
-        (setq end (+ end (- (length replacement) (length (match-string 1)))))
-        (replace-match replacement t t nil 1)))))
+	     (params (third info))
+	     (replacement
+	      (save-match-data
+		(if (org-babel-in-example-or-verbatim)
+		    (buffer-substring (match-beginning 0) (match-end 0))
+		  ;; expand noweb references in the original file
+		  (setf (second info)
+			(if (and (cdr (assoc :noweb params))
+				 (string= "yes" (cdr (assoc :noweb params))))
+			    (org-babel-expand-noweb-references
+			     info (get-file-buffer org-current-export-file))
+			  (second info)))
+		  (org-babel-exp-do-export info 'inline)))))
+	(setq end (+ end (- (length replacement) (length (match-string 1)))))
+	(replace-match replacement t t nil 1)))))
+
+(defun org-exp-res/src-name-cleanup ()
+  "Cleanup leftover #+results and #+srcname lines as part of the
+org export cycle.  This should only be called after all block
+processing has taken place."
+  (interactive)
+  (save-excursion
+    (goto-char (point-min))
+    (while (org-re-search-forward-unprotected
+	    (concat
+	     "\\("org-babel-source-name-regexp"\\|"org-babel-result-regexp"\\)")
+	    nil t)
+      (delete-region
+       (progn (beginning-of-line) (point))
+       (progn (end-of-line) (+ 1 (point)))))))
+
+(defun org-babel-in-example-or-verbatim ()
+  "Return true if the point is currently in an escaped portion of
+an org-mode buffer code which should be treated as normal
+org-mode text."
+  (or (org-in-indented-comment-line) 
+      (save-excursion
+	(save-match-data
+	  (goto-char (point-at-bol))
+	  (looking-at "[ \t]*:[ \t]")))
+      (org-in-regexps-block-p "^[ \t]*#\\+begin_src" "^[ \t]*#\\+end_src")))
 
 (defun org-babel-exp-lob-one-liners (start end)
   "Process #+lob (Library of Babel) calls between START and END for export.
@@ -104,17 +151,19 @@ options are taken from `org-babel-default-header-args'."
       (while (and (< (point) end)
 		  (re-search-forward org-babel-lob-one-liner-regexp nil t))
 	(setq replacement
-	      (save-match-data
-		(org-babel-exp-do-export
-		 (list "emacs-lisp" "results"
-		       (org-babel-merge-params
-			org-babel-default-header-args
-			(org-babel-parse-header-arguments
-			 (org-babel-clean-text-properties
-			  (concat ":var results="
-				  (mapconcat #'identity
-					     (org-babel-lob-get-info) " "))))))
-		 'lob)))
+	      (let ((lob-info (org-babel-lob-get-info)))
+		(save-match-data
+		  (org-babel-exp-do-export
+		   (list "emacs-lisp" "results"
+			 (org-babel-merge-params
+			  org-babel-default-header-args
+			  (org-babel-parse-header-arguments
+			   (org-babel-clean-text-properties
+			    (concat ":var results="
+				    (mapconcat #'identity
+					       (butlast lob-info) " ")))))
+			 (car (last lob-info)))
+		   'lob))))
 	(setq end (+ end (- (length replacement) (length (match-string 0)))))
 	(replace-match replacement t t)))))
 
@@ -209,20 +258,20 @@ results into the buffer."
 	     (t
 	      (if (stringp raw)
 		  (if (= 0 (length raw)) "=(no results)="
-		    (format "=%s=" raw))
-		(format "=%S=" raw)))))))
+		    (format "%s" raw))
+		(format "%S" raw)))))))
       ('block
           (org-babel-execute-src-block
-           nil nil (org-babel-merge-params
-		    params `((:results . ,(if silent "silent" "replace")))))
+	   nil info (org-babel-merge-params
+		     params `((:results . ,(if silent "silent" "replace")))))
         "")
       ('lob
        (save-excursion
 	 (re-search-backward org-babel-lob-one-liner-regexp nil t)
 	 (org-babel-execute-src-block
-	  nil (list lang body
-		    (org-babel-merge-params
-		     params `((:results . ,(if silent "silent" "replace")))))) "")))))
+	  nil info (org-babel-merge-params
+		    params `((:results . ,(if silent "silent" "replace")))))
+	 "")))))
 
 (provide 'org-babel-exp)
 ;;; org-babel-exp.el ends here
