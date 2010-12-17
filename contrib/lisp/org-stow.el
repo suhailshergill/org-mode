@@ -69,8 +69,7 @@ DEPTH-DELTA is the difference in depth."
 		     (buffer-substring
 			(cdr prop-drawer-points)
 			(org-entry-end-position)))))))
-			    
-      (apply #'concat parts)))
+      parts))
 
 ;;;_ , org-dblock-write:stowed-into
 (defun org-dblock-write:stowed-into (params)
@@ -84,11 +83,12 @@ DEPTH-DELTA is the difference in depth."
 		 (let*
 		    ((subst-depth (org-current-level))
 		       (depth-delta (- subst-depth m-depth 1)))
-		 (org-map-entries
-		    #'(lambda ()
-			 (org-stow-get-item-copy depth-delta))
-		    nil
-		    'tree))))
+		    (apply #'nconc
+		       (org-map-entries
+			  #'(lambda ()
+			       (org-stow-get-item-copy depth-delta))
+			  nil
+			  'tree)))))
 	    
 	    (inhibit-read-only t))
 
