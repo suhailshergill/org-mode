@@ -41,35 +41,46 @@ DEPTH-DELTA is the difference in depth."
 	  (org-get-property-block))
 	 ;;Get beginning of the entry proper.
 	 ;;org-property-end-re
-	 (parts
-	    (append
-	       (list
-		  ;;New headline, maybe indented
-		  ;;differently.
-		  (make-string 
-		     (+ (org-current-level) depth-delta)
-		     ?*)
-		  " "
-		  (org-get-heading)
-		  "\n")
+	 (beginning-entry-proper
+	    (if
+	       prop-drawer-points
+	       (save-excursion
+		  (goto-char (cdr prop-drawer-points))
+		  (search-forward-regexp org-property-end-re)
+		  (match-end 0))
+	       (save-excursion
+		  (org-back-to-heading t)
+		  (if (looking-at "\\*+[ \t]+\\([^\r\n]*\\)")
+		     (match-end 0) (point)))
+	       )))
+      
+      (append
+	 (list
+	    ;;New headline, maybe indented
+	    ;;differently.
+	    (make-string 
+	       (+ (org-current-level) depth-delta)
+	       ?*)
+	    " "
+	    (org-get-heading)
+	    "\n")
 				     
-	       ;;Properties block, with any id
-	       ;;transformed.
-	       ;;$$IMPROVE ME - leave out ID lines.
-	       (when prop-drawer-points
-		  (list
-		     "    :PROPERTIES:\n"
-		     (buffer-substring
-			(car prop-drawer-points)
-			(cdr prop-drawer-points))
-		     "    :END:\n"))
-	       ;;The rest, to the end of text entry.
-	       (when prop-drawer-points
-		  (list
-		     (buffer-substring
-			(cdr prop-drawer-points)
-			(org-entry-end-position)))))))
-      parts))
+	 ;;Properties block, with any id
+	 ;;transformed.
+	 ;;$$IMPROVE ME - leave out ID lines.
+	 (when prop-drawer-points
+	    (list
+	       "    :PROPERTIES:\n"
+	       (buffer-substring
+		  (car prop-drawer-points)
+		  (cdr prop-drawer-points))
+	       "    :END:\n"))
+	 ;;The rest, to the end of text entry.
+	 (when prop-drawer-points
+	    (list
+	       (buffer-substring
+		  beginning-entry-proper
+		  (org-entry-end-position)))))))
 
 ;;;_ , org-dblock-write:stowed-into
 (defun org-dblock-write:stowed-into (params)
