@@ -35,12 +35,12 @@
 ;;;_ , org-stow-get-item-copy
 (defun org-stow-get-item-copy (depth-delta)
    "Return a list of strings that when inserted are a copy of current item.
-DEPTH-DELTA is the difference in depth."
+DEPTH-DELTA is the difference in depth.
+The id property, if it exists, will be changed to source-id."
    (let*
       ((prop-drawer-points
 	  (org-get-property-block))
-	 ;;Get beginning of the entry proper.
-	 ;;org-property-end-re
+	 (rest-of-heading (org-get-heading))
 	 (beginning-entry-proper
 	    (if
 	       prop-drawer-points
@@ -51,36 +51,61 @@ DEPTH-DELTA is the difference in depth."
 	       (save-excursion
 		  (org-back-to-heading t)
 		  (if (looking-at "\\*+[ \t]+\\([^\r\n]*\\)")
-		     (match-end 0) (point)))
-	       )))
-      
-      (append
-	 (list
-	    ;;New headline, maybe indented
-	    ;;differently.
-	    (make-string 
-	       (+ (org-current-level) depth-delta)
-	       ?*)
-	    " "
-	    (org-get-heading)
-	    "\n")
-				     
-	 ;;Properties block, with any id
-	 ;;transformed.
-	 ;;$$IMPROVE ME - leave out ID lines.
-	 (when prop-drawer-points
-	    (list
-	       "    :PROPERTIES:\n"
-	       (buffer-substring
-		  (car prop-drawer-points)
-		  (cdr prop-drawer-points))
-	       "    :END:\n"))
-	 ;;The rest, to the end of text entry.
-	 (when prop-drawer-points
-	    (list
-	       (buffer-substring
-		  beginning-entry-proper
-		  (org-entry-end-position)))))))
+		     (match-end 0) 
+		     (point)))))
+
+	 (properties
+	    (org-entry-properties nil 'standard))
+	 (id-prop
+	    (assoc "ID" properties))
+	 ;;Remove certain properties
+ 	 (properties
+	    (delq nil
+	       (mapcar
+		  #'(lambda (prop)
+		       (cond
+			  ((equal (car prop) "ID") nil)
+			  ((equal (car prop) "CATEGORY") nil)
+			  (t prop)))
+		  properties)))
+	 (properties
+	    (if id-prop
+	       (cons
+		  (cons "SOURCE-ID" (cdr id-prop))
+		  properties)
+	       properties)))
+
+      ;;Make the new item, as a list of strings.
+      `(
+	  ;;New headline, maybe indented differently.
+	  ,(make-string 
+	      (+ (org-current-level) depth-delta)
+	      ?*)
+	  " "
+	  ;;The rest of the heading.
+	  ,rest-of-heading
+	  "\n"
+
+	  ;;New properties block.
+	  ,@(if properties
+	       `(  "    :PROPERTIES:\n"
+		   ,@(apply #'nconc 
+		      (mapcar
+			 #'(lambda (prop)
+			      (list
+				 "    :"
+				 (car prop)
+				 ": "
+				 (cdr prop)
+				 "\n"))
+			 properties))
+		   "    :END:\n")
+	       '())
+	 
+	  ;;The rest, to the end of text entry.
+	  ,(buffer-substring
+	      beginning-entry-proper
+	      (org-entry-end-position)))))
 
 ;;;_ , org-dblock-write:stowed-into
 (defun org-dblock-write:stowed-into (params)
