@@ -32,6 +32,45 @@
 (require 'org)
 
 ;;;_. Body
+;;;_ , org-stow-get-item-copy
+(defun org-stow-get-item-copy (depth-delta)
+   "Return a list of strings that when inserted are a copy of current item.
+DEPTH-DELTA is the difference in depth."
+   (let*
+      ((prop-drawer-points
+	  (org-get-property-block))
+	 ;;Get beginning of the entry proper.
+	 ;;org-property-end-re
+	 (parts
+	    (append
+	       (list
+		  ;;New headline, maybe indented
+		  ;;differently.
+		  (make-string 
+		     (+ (org-current-level) depth-delta)
+		     ?*)
+		  " "
+		  (org-get-heading)
+		  "\n")
+				     
+	       ;;Properties block, with any id
+	       ;;transformed.
+	       ;;$$IMPROVE ME - leave out ID lines.
+	       (when prop-drawer-points
+		  (list
+		     "    :PROPERTIES:\n"
+		     (buffer-substring
+			(car prop-drawer-points)
+			(cdr prop-drawer-points))
+		     "    :END:\n"))
+	       ;;The rest, to the end of text entry.
+	       (when prop-drawer-points
+		  (list
+		     (buffer-substring
+			(cdr prop-drawer-points)
+			(org-entry-end-position)))))))
+			    
+      (apply #'concat parts)))
 
 ;;;_ , org-dblock-write:stowed-into
 (defun org-dblock-write:stowed-into (params)
@@ -47,41 +86,7 @@
 		       (depth-delta (- subst-depth m-depth 1)))
 		 (org-map-entries
 		    #'(lambda ()
-			 (let*
-			    ((prop-drawer-points
-				(org-get-property-block))
-			       ;;Get beginning of the entry proper.
-			       ;;org-property-end-re
-			       (parts
-				  (append
-				     (list
-					;;New headline, maybe indented
-					;;differently.
-					(make-string 
-					   (+ (org-current-level) depth-delta)
-					   ?*)
-					" "
-					(org-get-heading)
-					"\n")
-				     
-				     ;;Properties block, with any id
-				     ;;transformed.
-				     ;;$$IMPROVE ME - leave out ID lines.
-				     (when prop-drawer-points
-					(list
-					   "    :PROPERTIES:\n"
-					   (buffer-substring
-					      (car prop-drawer-points)
-					      (cdr prop-drawer-points))
-					   "    :END:\n"))
-				     ;;The rest, to the end of text entry.
-				     (when prop-drawer-points
-					(list
-					   (buffer-substring
-					      (cdr prop-drawer-points)
-					      (org-entry-end-position)))))))
-			    
-			    (apply #'concat parts)))
+			 (org-stow-get-item-copy depth-delta))
 		    nil
 		    'tree))))
 	    
