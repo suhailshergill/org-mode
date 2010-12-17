@@ -2,18 +2,19 @@
 * The target tree
 ** Target 1
 
-#+BEGIN: stowed-into :id 7ff68f58-0115-45b2-8c3c-ef245b90081f
+#+BEGIN: stowed-into :id 7ff68f58-0115-45b2-8c3c-ef245b90081f :headline "Headline A"
 #+END:
 
 * Notes
 ** Note 1
-   :PROPERTIES:
-   :ID:       7ff68f58-0115-45b2-8c3c-ef245b90081f
-   :END:
-This is the text of note 1
-*** Note 1.1
-A subtree
+*** Headline A
+    :PROPERTIES:
+    :ID:       7ff68f58-0115-45b2-8c3c-ef245b90081f
+    :END:
+**** Note 1.1
+This is the text of note 1.1
 ** Note 2
+*** Headline A
    :PROPERTIES:
    :ID:       ba1797f3-c1ad-4ad8-b9a8-904038d68111
    :END:
