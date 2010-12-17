@@ -32,12 +32,13 @@
 (require 'org)
 
 ;;;_. Body
+
 ;;;_ , org-dblock-write:stowed-into
 (defun org-dblock-write:stowed-into (params)
+   "Make a dblock behave somewhat like a symlink"
    (let* (  (components (org-heading-components))
 	    (m-depth (org-current-level))
 	    (id (plist-get params :id))
-	    ;;$$IMPROVE ME Figure out how deep the block should be.
 	   (text-list
 	      (save-excursion
 		 (org-id-goto id)
@@ -46,42 +47,46 @@
 		       (depth-delta (- subst-depth m-depth 1)))
 		 (org-map-entries
 		    #'(lambda ()
-			 (let
+			 (let*
 			    ((prop-drawer-points
-				(org-get-property-block)))
+				(org-get-property-block))
+			       ;;Get beginning of the entry proper.
+			       ;;org-property-end-re
+			       (parts
+				  (append
+				     (list
+					;;New headline, maybe indented
+					;;differently.
+					(make-string 
+					   (+ (org-current-level) depth-delta)
+					   ?*)
+					" "
+					(org-get-heading)
+					"\n")
+				     
+				     ;;Properties block, with any id
+				     ;;transformed.
+				     ;;$$IMPROVE ME - leave out ID lines.
+				     (when prop-drawer-points
+					(list
+					   "    :PROPERTIES:\n"
+					   (buffer-substring
+					      (car prop-drawer-points)
+					      (cdr prop-drawer-points))
+					   "    :END:\n"))
+				     ;;The rest, to the end of text entry.
+				     (when prop-drawer-points
+					(list
+					   (buffer-substring
+					      (cdr prop-drawer-points)
+					      (org-entry-end-position)))))))
 			    
-			    (concat
-			       ;;Make the headline
-			       (make-string 
-				  (+ (org-current-level) depth-delta)
-				  ?*)
-			       " "
-			       (org-get-heading)
-			       "\n"
-			       ;;Properties block, with any id
-			       ;;transformed.
-			       ;;$$IMPROVE ME - leave this out if
-			       ;;prop-drawer-points is nil.
-			       ;;$$IMPROVE ME - leave out ID lines.
-			       (when prop-drawer-points
-				  (buffer-substring
-				     (car prop-drawer-points)
-				     (cdr prop-drawer-points)))
-			       ;;The rest, to (org-entry-end-position)
-			       
-			       )))
+			    (apply #'concat parts)))
 		    nil
 		    'tree))))
 	    
 	    (inhibit-read-only t))
-      ;;$$IMPROVE ME Remove ids from property blocks, replace them
-      ;;with a different property that links back to the source.
-      ;;$$IMPROVE ME Somehow make todo changes etc affect the source.
-      ;;They (correctly) don't affect the read-only text.  Or at least
-      ;;put point back there.
-      ;;$$IMPROVE ME Somehow make changes in the source propagate back
-      ;;- but for now, manually redoing all dynamic blocks will
-      ;;suffice. 
+
       (mapcar 
 	 #'(lambda (text)
 	      (insert (propertize text 'read-only t)))
