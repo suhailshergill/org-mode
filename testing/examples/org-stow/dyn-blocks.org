@@ -17,5 +17,6 @@ This is the text of note 1.1
 *** Headline A
    :PROPERTIES:
    :ID:       ba1797f3-c1ad-4ad8-b9a8-904038d68111
+   :example-prop: example-props-value
    :END:
 This is the text of note 2
