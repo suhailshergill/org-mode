@@ -32,6 +32,10 @@
 (require 'org)
 
 ;;;_. Body
+;;;_ , org-stow-unwanted-props
+(defconst org-stow-unwanted-props 
+   '("ID" "CATEGORY")
+   "Properties that shouldn't appear in item copies" )
 ;;;_ , org-stow-get-item-copy
 (defun org-stow-get-item-copy (depth-delta)
    "Return a list of strings that when inserted are a copy of current item.
@@ -53,7 +57,8 @@ The id property, if it exists, will be changed to source-id."
 		  (if (looking-at "\\*+[ \t]+\\([^\r\n]*\\)")
 		     (match-end 0) 
 		     (point)))))
-
+	 (end-entry
+	    (org-entry-end-position))
 	 (properties
 	    (org-entry-properties nil 'standard))
 	 (id-prop
@@ -63,11 +68,11 @@ The id property, if it exists, will be changed to source-id."
 	    (delq nil
 	       (mapcar
 		  #'(lambda (prop)
-		       (cond
-			  ((equal (car prop) "ID") nil)
-			  ((equal (car prop) "CATEGORY") nil)
-			  (t prop)))
+		       (if (member (car prop) org-stow-unwanted-props)
+			  '()
+			  prop))
 		  properties)))
+	 ;;Add source-id to properties if we can.
 	 (properties
 	    (if id-prop
 	       (cons
@@ -105,7 +110,7 @@ The id property, if it exists, will be changed to source-id."
 	  ;;The rest, to the end of text entry.
 	  ,(buffer-substring
 	      beginning-entry-proper
-	      (org-entry-end-position)))))
+	      end-entry))))
 
 ;;;_ , org-dblock-write:stowed-into
 (defun org-dblock-write:stowed-into (params)
@@ -164,10 +169,18 @@ The id property, if it exists, will be changed to source-id."
 ;;Erase our dblocks there (We own them or they'd appear as conflicts)
 ;;Remove tag "stowed" (back to "stowable")
 
-;;;_ , Mark an item (subtree) stowable
+;;;_ , org-stow-make-item-stowable 
+(defun org-stow-make-item-stowable ()
+   "Mark the current item stowable."
+   
+   (interactive)
+   (let*
+      ()
+      
+      ))
 ;;Find its target
 ;;Get that id and a prefix.
-;;Store that prefix.
+;;Store that prefix in property stow-path
 ;;Add a tag "stowable"
 
 ;;;_ , Add an item to a stowable subtree
