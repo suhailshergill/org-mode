@@ -34,7 +34,7 @@
 ;;;_. Body
 ;;;_ , org-stow-unwanted-props
 (defconst org-stow-unwanted-props 
-   '("ID" "CATEGORY")
+   '("ID" "CATEGORY" "STOW-PATH")
    "Properties that shouldn't appear in item copies" )
 ;;;_ , org-stow-get-item-copy
 (defun org-stow-get-item-copy (depth-delta)
@@ -45,6 +45,8 @@ The id property, if it exists, will be changed to source-id."
       ((prop-drawer-points
 	  (org-get-property-block))
 	 (rest-of-heading (org-get-heading))
+	 (depth
+	    (org-current-level))
 	 (beginning-entry-proper
 	    (if
 	       prop-drawer-points
@@ -84,7 +86,7 @@ The id property, if it exists, will be changed to source-id."
       `(
 	  ;;New headline, maybe indented differently.
 	  ,(make-string 
-	      (+ (org-current-level) depth-delta)
+	      (+ depth depth-delta)
 	      ?*)
 	  " "
 	  ;;The rest of the heading.
@@ -123,7 +125,7 @@ The id property, if it exists, will be changed to source-id."
 		 (org-id-goto id)
 		 (let*
 		    ((subst-depth (org-current-level))
-		       (depth-delta (- subst-depth m-depth 1)))
+		       (depth-delta (1+ (- m-depth subst-depth))))
 		    (apply #'nconc
 		       (org-map-entries
 			  #'(lambda ()
@@ -138,14 +140,21 @@ The id property, if it exists, will be changed to source-id."
 	      (insert (propertize text 'read-only t)))
 	 text-list)))
 
-;;;_ , Creating them.
+;;;_ , org-stow-create-mirror
+(defun org-stow-create-mirror (id headline)
+   ""
 
-'
-(org-create-dblock 
-   (list
-      :name "stowed-into" 
-      :id 'source-ID
-      :headline "Headline"))
+   (let*
+      ()
+      ;;Do we move to there or assume we are already there?
+      '(org-create-dblock 
+	  (list
+	     :name "stowed-into" 
+	     :id id  ;;$$CHANGE MY NAME :source might be better.
+	     :headline headline))))
+
+
+
 
 ;;NOT (org-insert-heading), it's too high, does too much.
 
@@ -171,17 +180,19 @@ The id property, if it exists, will be changed to source-id."
 
 ;;;_ , org-stow-make-item-stowable 
 (defun org-stow-make-item-stowable ()
-   "Mark the current item stowable."
+   "Make the current item stowable."
    
    (interactive)
    (let*
       ()
       
+      ;;Find its target
+      ;;Get that id and a prefix.
+      ;;Store that prefix in property stow-path, a multivalued property.
+      ;;Add a tag "stowable"
+
+      
       ))
-;;Find its target
-;;Get that id and a prefix.
-;;Store that prefix in property stow-path
-;;Add a tag "stowable"
 
 ;;;_ , Add an item to a stowable subtree
 ;;;_ , Integration with org-choose
