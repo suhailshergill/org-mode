@@ -13264,10 +13264,10 @@ Being in this list makes sure that they are offered for completion.")
   "Regular expression matching the last line of a property drawer.")
 
 (defconst org-clock-drawer-start-re "^[ \t]*:CLOCK:[ \t]*$"
-  "Regular expression matching the first line of a property drawer.")
+  "Regular expression matching the first line of a clock drawer.")
 
 (defconst org-clock-drawer-end-re "^[ \t]*:END:[ \t]*$"
-  "Regular expression matching the first line of a property drawer.")
+  "Regular expression matching the last line of a clock drawer.")
 
 (defconst org-property-drawer-re
   (concat "\\(" org-property-start-re "\\)[^\000]*\\("
@@ -13746,13 +13746,17 @@ formats in the current buffer."
 
     (sort rtn (lambda (a b) (string< (upcase a) (upcase b))))))
 
+(defun org-property-line-regexp (key)
+  "Return a regexp that matches list of all values of property KEY."
+   (concat "^[ \t]*:" key ":[ \t]*\\(\\S-.*\\)"))
+
 (defun org-property-values (key)
   "Return a list of all values of property KEY."
   (save-excursion
     (save-restriction
       (widen)
       (goto-char (point-min))
-      (let ((re (concat "^[ \t]*:" key ":[ \t]*\\(\\S-.*\\)"))
+      (let ((re (org-property-line-regexp key))
 	    values)
 	(while (re-search-forward re nil t)
 	  (add-to-list 'values (org-trim (match-string 1))))
