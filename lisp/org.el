@@ -10463,7 +10463,8 @@ This empties the block, puts the cursor at the insert position and returns
 the property list including an extra property :name with the block name."
   (unless (looking-at org-dblock-start-re)
     (error "Not at a dynamic block"))
-  (let* ((begdel (1+ (match-end 0)))
+  (let* ((inhibit-read-only t)
+	 (begdel (1+ (match-end 0)))
 	 (name (org-no-properties (match-string 1)))
 	 (params (append (list :name name)
 			 (read (concat "(" (match-string 3) ")")))))
