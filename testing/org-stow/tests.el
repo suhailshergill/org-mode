@@ -30,22 +30,57 @@
 ;;;_ , Requires
 
 (require 'org-stow)
+(require 'org)
+
+(require 'emtest/runner/define)
+(require 'emtest/testhelp/standard)
+(require 'emtest/testhelp/persist)
+(require 'emtest/testhelp/mocks/filebuf)
 
 ;;;_. Body
 ;;;_ , Insulation
 (defconst org-stow:th:surrounders 
    '()
    "The normal surrounders for org-stow tests" )
+;;;_ , Filename constants
+(defconst org-stow:th:examples-dir
+   (emt:expand-filename-here "examples") 
+   "Directory where examples are" )
+(defconst org-stow:th:db-id 
+   `(persist ,(expand-file-name "db" org-stow:th:examples-dir))
+   "" )
+
 ;;;_ , org-stow-get-item-copy
+
+;;Go to item 7ff68f58-0115-45b2-8c3c-ef245b90081f
+;;Check that the copy is what we want.
+;;Might loop over examples.
+
+
 ;;;_ , org-dblock-write:stowed-into
-;;Find:
-'"stowed-into :id 7ff68f58-0115-45b2-8c3c-ef245b90081f"
-;;In other tests, just go to that file.
+(emt:deftest-3
+   ((of 'org-dblock-write:stowed-into)
+      (db-id org-stow:th:db-id))
+   (nil
+      (emtb:with-buf
+	 (:file   "dyn-blocks.org"
+	    :dir     org-stow:th:examples-dir
+	    :mutable t)
+	 (org-mode)
+	 (emt:doc "Situation: In a file with our type of dynamic blocks.")
+	 (emt:doc "Operation: Update all the dynamic blocks.")
+	 (org-dblock-update t)
+	 (emt:doc "Result: As we expect.")
+	 (emt:assert
+	    (emt:eq-persist-p #'equal
+	       (buffer-substring-no-properties (point-min) (point-max))
+	       "dbid:169cba75-6164-4f25-8672-fa6b6c90989e")))))
+
 
 ;;;_ , org-stow-dblock-action
 ;;Find:
 '"stowed-into :id 7ff68f58-0115-45b2-8c3c-ef245b90081f"
-
+;;Check that the result is what we expect.
 
 
 ;;;_. Footers
