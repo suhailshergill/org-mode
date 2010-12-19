@@ -154,13 +154,124 @@ The id property, if it exists, will be changed to source-id."
 	     :headline headline))))
 
 
+;;Do NOT create heading with (org-insert-heading), it's too high, does
+;;too much.  Possibly factor something out of `org-stow-get-item-copy'
+;;;_ , org-stow-dblock-params
+(defun org-stow-dblock-params ()
+   "Return the parameters of the dblock point is in.
+The :name parameter is given as well.
+Assumes point is in a dblock."
+   (unless
+      (looking-at org-dblock-start-re)
+      (re-search-backward org-dblock-start-re))
+   (let*
+      ((name (org-no-properties (match-string 1)))
+	 (params (append (list :name name)
+		    (read (concat "(" (match-string 3) ")")))))
+      params))
+
+;;;_ , org-stow-dblock-action
+(defun org-stow-dblock-action (headlines-sought id)
+   ""
+
+   (let*
+      ((params (org-stow-dblock-params))
+	 (headline (plist-get params :headline))
+	 (its-id (plist-get params :id)))
+      (cond
+	 ;;It's some other type of dblock - no action.
+	 ((not (equal (plist-get params :name) "stowed-into")) nil)
+	 ;;It's our type and the headline is one we seek.
+	 ((member headline headlines-sought)
+	    (if
+	       (equal id its-id)
+	       ;;It's our own link.  We don't need to do anything
+	       ;;more here.
+	       '()
+	       ;;It's a link to another item.  We will have to split
+	       ;;the tree so both are in place.  $$TRANSITIONAL We'll
+	       ;;probably need to add more info to this form.
+	       `(split ,headline ,id ,its-id)))
+	 ;;It's our type, but not a headline we're interested in - no
+	 ;;action.
+	 (t nil))))
+
+;;;_ , org-stow-get-actions
+;;;_ , org-stow-item
+(defun org-stow-item ()
+   "Stow the current item.
+Ie, make it (a dynamic copy of it and its subtree) appear in another place."
+   
+   (interactive)
+   (let*
+      ((stow-to
+	  ;;An id that points at an ancestor of the target.
+	  (org-entry-get (point) "STOW-TO" nil))
+	 ;;The path from the target ancestor to the first target node
+	 ;;that's realized in the source.
+	 ;;$$PUNT for now
+	 (stow-path
+	    '(org-entry-get-multivalued-property (point)
+		"STOW-PATH"))
+	 ;;This node's own id.  It must have one for org-stow to work.
+	 (id
+	    (org-entry-get (point) "ID" nil))
+	 (headlines-sought
+	    (list
+	       (nth 5 (org-heading-components)))))
+      
+      ;;Split this off.  It will recurse.
+      
+      (save-excursion
+	 (org-id-goto stow-to)
+	 (let
+	    ((start (org-entry-beginning-position))
+	       (end
+		  (org-end-of-subtree t)))
+	    
+	    ;;$$PUNT Look at the children, step down the prefix path.
+	    ;;This can result in at most one conflict.
+
+	    ;;$$PUNT Collect actions, then if there's no conflict, do
+	    ;;them.
+
+	    ;;If that item has (non-dynamic) children, visit the children.
+
+	    ;;Narrow so that we only see dynamic blocks within this
+	    ;;item.
+	    (save-restriction
+	       (narrow-to-region start end)
+	       ;;Loop over dynamic blocks within that item.  
+
+	       (let
+		  ((rv-actions '()))
+		  (org-map-dblocks
+		     #'(lambda ()
+			  (let
+			     ((action
+				 (org-stow-dblock-action
+				    headlines-sought
+				    id)))
+			     (when action
+				(push action rv-actions)))))
+		  ;;$$IMPROVE ME  Quit early if we found as many items
+		  ;;as we sought.
+
+		  ;;Now find the children.
+		  
+		  )
+	       
+	       ))
+
+	 
+	 
+	 )
+      
+
+      
+      ))
 
 
-;;NOT (org-insert-heading), it's too high, does too much.
-
-;;;_ , Stowing a subtree
-
-;;Find prefix
 ;;Find that location (by id or headline)  The id will point at the
 ;;  *parent* of our root.  NB, the lower ones can't have real ids
 ;;  because they might well live in notes, which shouldn't become our target.
@@ -172,8 +283,17 @@ The id property, if it exists, will be changed to source-id."
 ;;Otherwise create dblocks in all the places.  Create our ids if they
 ;;don't already exist.
 ;;Add a tag "stowed"
-
-;;;_ , Unstowing
+;;org-use-property-inheritance or not?
+;;;_ , org-unstow-item
+(defun org-unstow-item ()
+   "Unstow the current item.
+Ie, remove a dynamic copy of it, if there is one."
+   
+   (interactive)
+   (let*
+      ()
+      
+      ))
 ;;Again find all the locations
 ;;Erase our dblocks there (We own them or they'd appear as conflicts)
 ;;Remove tag "stowed" (back to "stowable")
@@ -191,7 +311,7 @@ The id property, if it exists, will be changed to source-id."
       ;;Store that prefix in property stow-path, a multivalued property.
       ;;Add a tag "stowable"
 
-      
+      '(org-entry-put-multivalued-property pom property &rest values)
       ))
 
 ;;;_ , Add an item to a stowable subtree
