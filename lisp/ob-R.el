@@ -181,7 +181,7 @@ current code buffer."
 
 (defun org-babel-R-graphical-output-file (params)
   "Name of file to which R should send graphical output."
-  (and (member "graphics" (cdr (assq :result-params params)))
+  (and (equal "graphics" (cdr (assq :file-results params)))
        (cdr (assq :file params))))
 
 (defun org-babel-R-construct-graphics-device-call (out-file params)
