@@ -32,6 +32,30 @@
 
 (defvar org-babel-error-buffer-name "*Org-Babel Error Output*")
 
+(defvar org-babel-session-error-langs '("R" "python")
+  "Languages for which errors in sessions are detected.
+
+For languages in this list, code evaluated in a session will be
+wrapped with exception-signalling code, and babel will detect any
+exceptions thus signalled.")
+
+(defconst org-babel-session-error-value "__org_babel_error__"
+  "Value returned when on error in a session.
+
+If the current language is a member of
+`org-babel-session-error-langs', and an error occurs in a
+session, then this string will be returned to org-babel.")
+
+(defun org-babel-session-error-regexp ()
+  "Regexp matching results indicating error.
+
+If the current language is a member of
+`org-babel-session-error-langs', and a result matches this
+regexp, then org-babel will signal a error. The first captured
+value will be used as an error code and the second as an error
+message."
+  (concat "\\(" org-babel-session-error-value "\\)\\(.*\\)"))
+
 (defun org-babel-eval-error-notify (exit-code stderr)
   "Open a buffer to display STDERR and a message with the value of EXIT-CODE."
   (let ((buf (get-buffer-create org-babel-error-buffer-name)))
