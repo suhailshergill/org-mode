@@ -1657,9 +1657,12 @@ parameters when merging lists."
 					  exports '("results"))))
 		 (setq params (cons pair (assq-delete-all (car pair) params)))))
 	      (:file-results
-	       (when (and (cdr pair) (member "file" results))
-		 (setq results (e-merge results-exclusive-groups
-					results (split-string (cdr pair))))))
+	       (when (cdr pair)
+		 (if (member "file" results)
+		     (setq results
+			   (e-merge results-exclusive-groups
+				    results (split-string (cdr pair)))))
+		 (setq params (cons pair (assq-delete-all (car pair) params)))))
 	      (:exports
 	       (setq exports (e-merge exports-exclusive-groups
 				      exports (split-string (cdr pair)))))
