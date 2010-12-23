@@ -43,24 +43,15 @@
   '((:results . "output") (:cmdline . "bal"))
   "Default arguments to use when evaluating a ledger source block.")
 
+(defvar org-babel-ledger-command "ledger"
+  "Command to invoke ledger")
+
 (defun org-babel-execute:ledger (body params)
   "Execute a block of Ledger entries with org-babel.  This function is
 called by `org-babel-execute-src-block'."
-  (message "executing Ledger source code block")
-  (let ((result-params (split-string (or (cdr (assoc :results params)) "")))
-	(cmdline (cdr (assoc :cmdline params)))
-        (in-file (org-babel-temp-file "ledger-"))
-	(out-file (org-babel-temp-file "ledger-output-")))
-    (with-temp-file in-file (insert body))
-    (message (concat "ledger"
-		     " -f " (org-babel-process-file-name in-file)
-		     " " cmdline))
-    (with-output-to-string
-      (shell-command (concat "ledger"
-			     " -f " (org-babel-process-file-name in-file)
-			     " " cmdline
-			     " > " (org-babel-process-file-name out-file))))
-    (with-temp-buffer (insert-file-contents out-file) (buffer-string))))
+  (org-babel-eval
+   (concat org-babel-ledger-command " -f - " (cdr (assoc :cmdline params)))
+   body))
 
 (defun org-babel-prep-session:ledger (session params)
   (error "Ledger does not support sessions"))
