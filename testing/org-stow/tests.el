@@ -32,7 +32,7 @@
 (require 'org-stow)
 (require 'org)
 
-(require 'emtest/runner/define)
+(require 'emtest/main/define)
 (require 'emtest/testhelp/standard)
 (require 'emtest/testhelp/persist)
 (require 'emtest/testhelp/mocks/filebuf)
