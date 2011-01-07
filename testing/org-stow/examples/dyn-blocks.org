@@ -2,7 +2,8 @@
 * The target tree
 ** Target 1
 
-#+BEGIN: stowed-into :id 7ff68f58-0115-45b2-8c3c-ef245b90081f :headline "Headline A"
+#+BEGIN: stowed-into :source-id 7ff68f58-0115-45b2-8c3c-ef245b90081f :headline "Headline A" :depth 3
+
 #+END:
 
 * Notes
