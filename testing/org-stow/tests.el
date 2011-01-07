@@ -49,24 +49,40 @@
 (defconst org-stow:th:db-id 
    `(persist ,(expand-file-name "db" org-stow:th:examples-dir))
    "" )
+;;;_ , Helpers
+(defmacro org-stow:th:in-buf (filename &rest body)
+   ""
+   
+   `(emtb:with-buf
+       (:file   ,filename
+	  :dir     org-stow:th:examples-dir
+	  :mutable t)
+       (org-mode)
+       ,@body))
+
 
 ;;;_ , org-stow-get-item-copy
 
-;;Go to item 7ff68f58-0115-45b2-8c3c-ef245b90081f
-;;Check that the copy is what we want.
-;;Might loop over examples.
-
+(emt:deftest-3
+   ((of 'org-stow-get-item-copy)
+      (db-id org-stow:th:db-id))
+   (nil
+      (org-stow:th:in-buf "dyn-blocks.org"
+	 (emt:doc "Situation: In a file with our type of dynamic blocks.")
+	 (org-id-open "7ff68f58-0115-45b2-8c3c-ef245b90081f")
+	 (emt:doc "Situation: Point is at a known item.")
+	 (emt:assert
+	    (emt:eq-persist-p 
+	       #'equal 
+	       (org-stow-get-item-copy 0)
+	       "dbid:83a0ec41-f598-4091-b653-8bba0ef89c2c")))))
 
 ;;;_ , org-dblock-write:stowed-into
 (emt:deftest-3
    ((of 'org-dblock-write:stowed-into)
       (db-id org-stow:th:db-id))
    (nil
-      (emtb:with-buf
-	 (:file   "dyn-blocks.org"
-	    :dir     org-stow:th:examples-dir
-	    :mutable t)
-	 (org-mode)
+      (org-stow:th:in-buf "dyn-blocks.org"
 	 (emt:doc "Situation: In a file with our type of dynamic blocks.")
 	 (emt:doc "Operation: Update all the dynamic blocks.")
 	 (org-dblock-update t)
@@ -78,10 +94,53 @@
 
 
 ;;;_ , org-stow-dblock-action
-;;Find:
-'"stowed-into :id 7ff68f58-0115-45b2-8c3c-ef245b90081f"
-;;Check that the result is what we expect.
+(emt:deftest-3
+   ((of 'org-stow-dblock-action)
+      (db-id org-stow:th:db-id))
+   (nil
+      (org-stow:th:in-buf "dyn-blocks.org"
+	 (emt:doc "Situation: In a file with our type of dynamic blocks.")
+	 (search-forward
+	    "stowed-into :source-id 7ff68f58-0115-45b2-8c3c-ef245b90081f")
+	 (emt:doc "Situation: Point is on the sole dynamic block.")
+	 (emt:doc "Operation: Find actions.")
+	 (emt:doc "Param: HEADLINES-SOUGHT contains (only) the
+   headline of the block.")
+	 (emt:doc "Param: ID is the id the dblock knows about.")
+	 (emt:doc "Response: nil, indicating no action needed.")
+	 (emt:assert
+	    (emt:eq-persist-p 
+	       #'equal 
+	       (org-stow-dblock-action
+		  '("Headline A")
+		  "7ff68f58-0115-45b2-8c3c-ef245b90081f")
+	       "dbid:78a627ba-2a39-4a8a-8ff7-823a221fe7f9"))))
 
+   (nil
+      (org-stow:th:in-buf "dyn-blocks.org"
+	 (emt:doc "Situation: In a file with our type of dynamic blocks.")
+	 (search-forward
+	    "stowed-into :source-id 7ff68f58-0115-45b2-8c3c-ef245b90081f")
+	 (emt:doc "Situation: Point is on the sole dynamic block.")
+	 (emt:doc "Operation: Find actions.")
+	 (emt:doc "Param: HEADLINES-SOUGHT contains (only) the
+   headline of the block.")
+	 (emt:doc "Param: ID is a different id than the dblock uses.")
+	 (emt:doc "Response: A splitting action.")
+	 (emt:assert
+	    (emt:eq-persist-p 
+	       #'equal 
+	       (org-stow-dblock-action
+		  '("Headline A")
+		  "7ff68f58-different-id")
+	       "dbid:78a627ba-2a39-4a8a-8ff7-823a221fe7f9"))))
+   )
+
+;;Check that the result is what we expect.
+;;;_ , Find an item's children, both dblocks and real items
+;;;_ , org-stow-item
+;;;_ , org-unstow-item
+;;;_ , org-stow-make-item-stowable
 
 ;;;_. Footers
 ;;;_ , Provides
