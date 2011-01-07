@@ -32,11 +32,76 @@
 (require 'org)
 
 ;;;_. Body
-;;;_ , org-stow-unwanted-props
+;;;_ , Types
+(defstruct (org-stow-target
+	      (:constructor org-stow-make-target)
+	      (:conc-name org-stow-target->))
+   
+   "A target object"
+   (type      () :type (member dblock item virtual))
+   (path      () :type (repeat string))
+   (rv-virt-path () :type (repeat string)))
+
+
+(defstruct (org-stow-source
+	      (:constructor org-stow-make-source)
+	      (:conc-name org-stow-source->))
+   "A source object"
+   (id   () :type symbol)
+   (headline () :type string))
+;;;_ , Constants
+;;;_  . org-stow-unwanted-props
 (defconst org-stow-unwanted-props 
-   '("ID" "CATEGORY" "STOW-PATH")
+   '("ID" "CATEGORY" "STOW-TO" "STOW-HIDDEN-PATH")
    "Properties that shouldn't appear in item copies" )
-;;;_ , org-stow-get-item-copy
+;;;_ , Utility
+;;;_  . org-stow-map-single-level
+(defun org-stow-map-single-level (depth func &optional match scope &rest other-skips)
+   ""
+   
+   (let
+      ((skipfunc
+	  ;;Function to restrict to this depth.  `org-agenda-skip'
+	  ;;undocumentedly requires return value (if not nil) to be a
+	  ;;count or marker that it can go to.
+	  `(lambda ()
+	      (if
+		 (equal 
+		    (org-reduced-level (org-current-level))
+		    ,depth)
+		 nil
+		 (point)))))
+      
+      (apply #'org-map-entries
+	 func match scope skipfunc other-skips)))
+
+;;;_  . org-stow-dblock-params
+(defun org-stow-dblock-params ()
+   "Return the parameters of the dblock point is in.
+The :name parameter is given as well.
+Assumes point is in a dblock."
+   (save-excursion
+      (unless
+	 (looking-at org-dblock-start-re)
+	 (re-search-backward org-dblock-start-re))
+      (let
+	 (  (start (point))
+	    (name (org-no-properties (match-string 1)))
+	    (raw-params (read (concat "(" (match-string 3) ")"))))
+
+	 (append 
+	    (list 
+	       :name name
+	       :start start
+	       :end
+	       (save-excursion
+		  (re-search-forward org-dblock-end-re nil t)
+		  (point)))
+	    raw-params))))
+;;Test this on a known file
+
+;;;_ , Mirroring
+;;;_  . org-stow-get-item-copy
 (defun org-stow-get-item-copy (depth-delta)
    "Return a list of strings that when inserted are a copy of current item.
 DEPTH-DELTA is the difference in depth.
@@ -44,6 +109,7 @@ The id property, if it exists, will be changed to source-id."
    (let*
       ((prop-drawer-points
 	  (org-get-property-block))
+	 ;;$$IMPROVE ME  Remove tags "stowable" and "stowed"
 	 (rest-of-heading (org-get-heading))
 	 (depth
 	    (org-current-level))
@@ -114,18 +180,18 @@ The id property, if it exists, will be changed to source-id."
 	      beginning-entry-proper
 	      end-entry))))
 
-;;;_ , org-dblock-write:stowed-into
+;;;_  . org-dblock-write:stowed-into
 (defun org-dblock-write:stowed-into (params)
    "Make a dblock behave somewhat like a symlink"
-   (let* (  (components (org-heading-components))
-	    (m-depth (org-current-level))
-	    (id (plist-get params :id))
+   (let* (  
+	    (m-depth (plist-get params :depth))
+	    (id (plist-get params :source-id))
 	   (text-list
 	      (save-excursion
 		 (org-id-goto id)
 		 (let*
 		    ((subst-depth (org-current-level))
-		       (depth-delta (1+ (- m-depth subst-depth))))
+		       (depth-delta (- m-depth subst-depth)))
 		    (apply #'nconc
 		       (org-map-entries
 			  #'(lambda ()
@@ -140,63 +206,408 @@ The id property, if it exists, will be changed to source-id."
 	      (insert (propertize text 'read-only t)))
 	 text-list)))
 
-;;;_ , org-stow-create-mirror
-(defun org-stow-create-mirror (id headline)
+;;;_ , Making sources and targets
+;;;_  . org-stow-apair
+(deftype org-stow-apair ()
    ""
+   '(list string (repeat org-stow-source) (or null org-stow-target)))
+;;;_  . org-stow-get-split-arglists
+(defun org-stow-get-split-arglists (sources target-parent)
+   "Return a list of data each suitable for `org-stow-get-actions-aux'.
+SOURCES must be a list of `org-stow-source'.
+TARGET-PARENT must be an `org-stow-target'."
 
+   ;;Collect unique headlines' data as (headline source-list target)
    (let*
-      ()
-      ;;Do we move to there or assume we are already there?
-      '(org-create-dblock 
-	  (list
-	     :name "stowed-into" 
-	     :id id  ;;$$CHANGE MY NAME :source might be better.
-	     :headline headline))))
+      ((alist '()))
+      (dolist (src sources)
+	 (let*
+	    ((headline (org-stow-source->headline src))
+	       (apair (assoc headline alist)))
+	    ;;Add source to the relevant apair in alist, creating it
+	    ;;if needed.
+	    (if apair
+	       (progn
+		  (check-type apair org-stow-apair)
+		  (push src (second apair)))
+	       (push
+		  (list headline (list src) nil)
+		  alist))))
+      
+      ;;If target is an item, add its children as targets, overriding
+      ;;any defaults.
+      (when
+	 (eq (org-stow-target->type target-parent) 'item)
+	 (dolist (trgt (org-stow-get-target-children target-parent))
+	    (let*
+	       (
+		  (rv-virt-path
+		     (org-stow-target->rv-virt-path trgt))
+		  (headline 
+		     (if rv-virt-path
+			(car rv-virt-path)
+			(last (org-stow-target->path trgt))))
+		  (apair (assoc headline alist)))
+	       ;;Add target to the relevant apair in alist, creating it
+	       ;;if needed.
+	       (if apair
+		  (progn
+		     (check-type apair org-stow-apair)
+		     ;;Check that targets have unique headlines.  This
+		     ;;may be rethought.
+		     (assert (null (third apair)))
+		     (setf (third apair) trgt))
+		  (push
+		     (list headline '() trgt)
+		     alist)))))
 
+      ;;$$IMPROVE ME Short-circuit for apairs with no sources.
+      (mapcar
+	 #'(lambda (apair)
+	      (check-type apair org-stow-apair)
+	      ;;Return is (source-list target)
+	      (if
+		 (third apair)
+		 ;;If a target is known, use it.
+		 (cdr apair)
+		 ;;Otherwise make one.
+		 (list 
+		    (second apair)
+		    (org-stow-make-target
+		       :type 'virtual
+		       :path (org-stow-target->path target-parent)
+		       :rv-virt-path
+		       (cons
+			  (first apair)
+			  (org-stow-target->rv-virt-path target-parent))))))
+	 alist)))
 
-;;Do NOT create heading with (org-insert-heading), it's too high, does
-;;too much.  Possibly factor something out of `org-stow-get-item-copy'
-;;;_ , org-stow-dblock-params
-(defun org-stow-dblock-params ()
-   "Return the parameters of the dblock point is in.
-The :name parameter is given as well.
-Assumes point is in a dblock."
-   (unless
-      (looking-at org-dblock-start-re)
-      (re-search-backward org-dblock-start-re))
+;;Test this: Make sources and targets from a known file.  Recognize results.
+
+;;;_  . org-stow-path->target
+(defun org-stow-path->target (path)
+   "Return a target object, given a path."
+   ;;$$IMPROVE ME  Check that path is non-empty
+   ;;$$IMPROVE ME  Check that the item can be found.
+   (org-stow-make-target
+      :path path
+      :rv-virt-path '()
+      :type 'item))
+
+'(org-stow-path->target 
+       (org-entry-get-multivalued-property (point) "STOW-TO"))
+
+;;;_  . org-stow-get-target-children
+(defun org-stow-get-target-children (target)
+   "Return a list of the children of TARGET, including dblocks.
+If target is not an item, return an empty list."
+
+   (if
+      (eq (org-stow-target->type target) 'item)
+      (save-excursion
+	 (org-stow-goto-location (org-stow-target->path target))
+	 (let
+	    ((start (org-entry-beginning-position))
+	       (end
+		  (org-end-of-subtree t))
+	       (depth
+		  (org-reduced-level (org-current-level)))
+	       (parent-path (org-stow-target->path target)))
+	    
+	    ;;Narrow so that we only see dynamic blocks within this
+	    ;;item.
+	    (save-restriction
+	       (narrow-to-region start end)
+	       ;;Loop over dynamic blocks within restriction
+	       (let*
+		  (
+		     (dblocks-data
+		      (let 
+			 ((collected '()))
+			 (org-map-dblocks
+			    #'(lambda ()
+				 (let
+				    ((params
+					(org-stow-dblock-params)))
+				    ;;Our type of dblock
+				    (when 
+				       (equal 
+					  (plist-get params :name) 
+					  "stowed-into")
+				    (push params collected)))))
+			 (nreverse collected)))
+		     (dblock-targets
+			(mapcar
+			   #'(lambda (params)
+				(org-stow-make-target
+				   :type 'dblock
+				   :rv-virt-path 
+				   (list (plist-get params :headline))
+				   :path  parent-path))
+			   dblocks-data))
+		     ;;Each region we inspect begins at start or the
+		     ;;end of a dblock and ends at the start of the
+		     ;;next dblock or end.
+		     (start-posns
+			(cons 
+			   start
+			   (mapcar 
+			      #'(lambda (params)
+				   (plist-get params :end))
+			      dblocks-data)))
+		     (end-posns
+			(nconc
+			   (mapcar
+			      #'(lambda (params)
+				   (plist-get params :start)) 
+			      dblocks-data) 
+			   (list end)))
+		     (item-targets
+			(apply #'nconc
+			   (mapcar*
+			      #'(lambda (start end)
+				   (save-restriction
+				      (narrow-to-region start end)
+				      (org-stow-map-single-level
+					 (1+ depth)
+					 #'(lambda ()
+					      (org-stow-path->target
+						 (append parent-path 
+						    (list 
+						       (nth 4
+							  (org-heading-components)))))))))
+			      start-posns
+			      end-posns))))
+
+		  (append item-targets dblock-targets)))))
+      
+      ;;Otherwise return the empty list
+      '()))
+
+;;To test we'd like a function that describes a target object's type
+;;and headline: (last (org-stow-target->path target))
+'(org-stow-get-target-children 
+    (org-stow-get-target 
+       (org-entry-get-multivalued-property (point) "STOW-TO")))
+
+;;;_  . org-stow-source-at-point
+(defun org-stow-source-at-point (&optional nopath)
+   "Return a source object corresponding to item at point."
    (let*
-      ((name (org-no-properties (match-string 1)))
-	 (params (append (list :name name)
-		    (read (concat "(" (match-string 3) ")")))))
-      params))
-
-;;;_ , org-stow-dblock-action
-(defun org-stow-dblock-action (headlines-sought id)
-   ""
-
-   (let*
-      ((params (org-stow-dblock-params))
-	 (headline (plist-get params :headline))
-	 (its-id (plist-get params :id)))
-      (cond
-	 ;;It's some other type of dblock - no action.
-	 ((not (equal (plist-get params :name) "stowed-into")) nil)
-	 ;;It's our type and the headline is one we seek.
-	 ((member headline headlines-sought)
-	    (if
-	       (equal id its-id)
-	       ;;It's our own link.  We don't need to do anything
-	       ;;more here.
+      (
+	 ;;The path from the target ancestor to the first target node
+	 ;;that's realized in the source.  Unused for now.
+	 (hidden-path
+	    (if nopath
 	       '()
-	       ;;It's a link to another item.  We will have to split
-	       ;;the tree so both are in place.  $$TRANSITIONAL We'll
-	       ;;probably need to add more info to this form.
-	       `(split ,headline ,id ,its-id)))
-	 ;;It's our type, but not a headline we're interested in - no
-	 ;;action.
-	 (t nil))))
+	       (org-entry-get-multivalued-property (point)
+		  "STOW-HIDDEN-PATH")))
+	 (id
+	    (org-id-get-create))
+	 (headline
+	    (nth 4 (org-heading-components))))
+      
+      ;;$$IMPROVE ME Account for hidden-path
+      (org-stow-make-source 
+	 :id id
+	 :headline headline)))
+;;;_  . org-stow-source-children
+(defun org-stow-source-children (source)
+   "Return a list of children of SOURCE"
+   
+   ;;$$IMPROVE ME If there's a hidden path, instead strip the first
+   ;;item from it.
 
-;;;_ , org-stow-get-actions
+   ;;Go to that item.
+   (org-id-goto
+      (org-stow-source->id source))
+
+   ;;Traverse the subtree
+   (let*
+      ((depth
+	  (org-reduced-level (org-current-level))))
+      (org-stow-map-single-level (1+ depth)
+	 #'(lambda ()
+	      (org-stow-source-at-point t))
+	 nil
+	 'tree)))
+
+;;Test by checking `org-stow-source-at-point' on the children.  And
+;;`org-stow-source-at-point' to get the original argument, too.
+
+;;;_ , Finding actions
+;;;_  . org-stow-get-actions-item
+(defun org-stow-get-actions-item (source-list target)
+   "Get a list of actions to stow SOURCE-LIST in a normal item"
+
+   ;;$$IMPROVE ME If any source has text for this item, error.
+   (let*
+      ;;Expand each source to a list of its children
+      ((source-children
+	  (apply #'nconc
+	     (mapcar
+		#'org-stow-source-children
+		source-list)))
+	 (child-groups
+	    (org-stow-get-split-arglists source-children target)))
+
+      ;;Recurse as needed
+      (apply #'nconc
+	 (mapcar
+	    #'(lambda (group)
+		 (apply #'org-stow-get-actions group))
+	    child-groups))))
+
+;;;_  . org-stow-get-actions-dblock
+(defun org-stow-get-actions-dblock (source-list target)
+   "Get a list of actions to stow SOURCE-LIST in a dblock"
+   
+   
+   (if (= (length source-list) 1)
+      (let
+	 ((src (car source-list)))
+	 ;;$$IMPROVE ME if source has a hidden path, instead make
+	 ;;`dblock->item', zero or more `create-item', and
+	 ;;`create-mirror'
+	 `((already-present
+	      ,(org-stow-target->path      target)
+	      ,(org-stow-source->id        src)
+	      ,(org-stow-source->headline  src))))
+      (let*
+	 ((params 
+	     (save-excursion
+		(org-stow-goto-location 
+		   (org-stow-target->path target))
+		(org-stow-dblock-params)))
+	    
+	    (source-id (plist-get params :source-id))
+	    (headline  (plist-get params :headline)))
+	 (cons
+	    ;;Since we have multiple sources, we must split the
+	    ;;subtree.
+	    `(dblock->item
+	       ,(org-stow-target->path target)
+	       ,source-id
+	       ,headline)
+	    (org-stow-get-actions-item 
+	       ;;The dblock's id indicates another source that
+	       ;;contributes to this subtree, so include it.
+	       (cons
+		  (org-stow-make-source 
+		     :id source-id
+		     :headline headline)
+		  source-list) 
+	       target)))))
+;;;_  . org-stow-get-actions-virtual
+;;$$TEST ME with making nested stuff
+(defun org-stow-get-actions-virtual (source-list target)
+   "Get a list of actions to stow SOURCE-LIST in a virtual item"
+   (if (= (length source-list) 1)
+      (let
+	 ((src (car source-list)))
+	 ;;$$FIX ME Target is virtual, so path by itself will not
+	 ;;work.
+	 `((create-mirror
+	      ,(org-stow-target->path      target)
+	      ,(org-stow-source->id        src)
+	      ,(org-stow-source->headline  src)
+	      ,(+
+		  (length (org-stow-target->path         target))
+		  (length (org-stow-target->rv-virt-path target))
+		  -1))))
+      
+      (org-stow-get-actions-item source-list target)))
+
+;;;_  . org-stow-get-actions
+(defun org-stow-get-actions (source-list target)
+   "Get a list of actions to stow SOURCE-LIST in TARGET"
+   (funcall
+      (ecase (org-stow-target->type target)
+	 (item #'org-stow-get-actions-item)
+	 (dblock #'org-stow-get-actions-dblock)
+	 (virtual #'org-stow-get-actions-virtual))
+      source-list
+      target))
+
+;;;_ , org-stow-goto-location
+(defun org-stow-goto-location (location)
+   "Move point to target LOCATION."
+   ;;Location's representation may change.  Path is fundamental, but
+   ;;may be augmented.
+   (let
+      ((mark (org-find-olp location)))
+      (set-buffer (marker-buffer mark))
+      (goto-char mark)
+      (set-marker mark nil)))
+
+;;;_ , Actions
+;;;_  . Individual actions
+;;;_   , org-stow-create-item
+(defun org-stow-create-item (depth headline)
+   "Create an item with the given DEPTH and HEADLINE."
+   (apply #'insert
+      ;;$$FACTOR ME with `org-stow-get-item-copy'
+      `(
+	  ,(make-string depth ?*)
+	  " "
+	  ,headline
+	  "\n")))
+;;Test on an empty org buffer
+
+;;;_   , org-stow-create-mirror
+(defun org-stow-create-mirror (source-id headline depth)
+   "Create a mirror with the given SOURCE-ID and HEADLINE"
+   (org-create-dblock 
+      (list
+	 :name "stowed-into" 
+	 :source-id source-id
+	 :headline headline
+	 :depth depth)))
+;;Test on an empty org buffer
+
+;;;_   , org-stow-erase-dblock
+(defun org-stow-erase-dblock ()
+   "Erase the dblock at this location."
+   ;;$$IMPROVE ME Assert that it's one of ours.
+   ;;$$IMPROVE ME Assert that point is indeed within a dblock, ie
+   ;;finding a dblock beginning from the end finds the start we found,
+   ;;and vv.
+   (let*
+      (  (start
+	    (save-excursion
+	       ;;$$ENCAP ME
+	       (re-search-backward org-dblock-start-re)
+	       (point)))
+	 (end
+	    ;;$$ENCAP ME
+	    (save-excursion
+	       (re-search-forward org-dblock-end-re nil t)
+	       (point))))
+      (delete-region start end)))
+;;Test on a known file
+
+;;;_   , org-stow-dblock->item
+(defun org-stow-dblock->item (depth headline)
+   "Replace a dblock with an item of DEPTH and HEADLINE."
+      (org-stow-erase-dblock)
+      (org-stow-create-item depth headline))
+;;Test on a known file
+
+;;;_  . org-stow-do-action
+;;$$RETHINK ME Maybe take target instead of location.
+(defun org-stow-do-action (governor location &rest args)
+   "Dispatch an action"
+   (save-excursion
+      (org-stow-goto-location location)
+      (apply
+	 (ecase governor
+	    (create-item   #'org-stow-create-item)
+	    (create-mirror #'org-stow-create-mirror)
+	    (dblock->item  #'org-stow-dblock->item)
+	    (already-present #'ignore))
+	 args)))
+
+
 ;;;_ , org-stow-item
 (defun org-stow-item ()
    "Stow the current item.
@@ -204,99 +615,44 @@ Ie, make it (a dynamic copy of it and its subtree) appear in another place."
    
    (interactive)
    (let*
-      ((stow-to
-	  ;;An id that points at an ancestor of the target.
-	  (org-entry-get (point) "STOW-TO" nil))
-	 ;;The path from the target ancestor to the first target node
-	 ;;that's realized in the source.
-	 ;;$$PUNT for now
-	 (stow-path
-	    '(org-entry-get-multivalued-property (point)
-		"STOW-PATH"))
-	 ;;This node's own id.  It must have one for org-stow to work.
-	 (id
-	    (org-entry-get (point) "ID" nil))
-	 (headlines-sought
-	    (list
-	       (nth 5 (org-heading-components)))))
-      
-      ;;Split this off.  It will recurse.
-      
-      (save-excursion
-	 (org-id-goto stow-to)
-	 (let
-	    ((start (org-entry-beginning-position))
-	       (end
-		  (org-end-of-subtree t)))
-	    
-	    ;;$$PUNT Look at the children, step down the prefix path.
-	    ;;This can result in at most one conflict.
+      ((target-path
+	  ;;An path to the parent of the target.
+	  (org-entry-get-multivalued-property (point) "STOW-TO"))
+	 ;;$$IMPROVE ME  Check that item has a target-path
+	 (source
+	    (org-stow-source-at-point))
+	 (target (org-stow-path->target target-path))
+	 (actions
+	    (org-stow-get-actions (list source) target)))
 
-	    ;;$$PUNT Collect actions, then if there's no conflict, do
-	    ;;them.
+      ;;If we got here, we encountered no error, so commit all the
+      ;;actions.
+      (dolist (act actions)
+	 (apply #'org-stow-do-action act))
 
-	    ;;If that item has (non-dynamic) children, visit the children.
-
-	    ;;Narrow so that we only see dynamic blocks within this
-	    ;;item.
-	    (save-restriction
-	       (narrow-to-region start end)
-	       ;;Loop over dynamic blocks within that item.  
-
-	       (let
-		  ((rv-actions '()))
-		  (org-map-dblocks
-		     #'(lambda ()
-			  (let
-			     ((action
-				 (org-stow-dblock-action
-				    headlines-sought
-				    id)))
-			     (when action
-				(push action rv-actions)))))
-		  ;;$$IMPROVE ME  Quit early if we found as many items
-		  ;;as we sought.
-
-		  ;;Now find the children.
-		  
-		  )
-	       
-	       ))
-
-	 
-	 
-	 )
-      
-
-      
-      ))
+      ;;Mark this item "stowed".
+      (org-toggle-tag "stowed" 'on)))
 
 
-;;Find that location (by id or headline)  The id will point at the
-;;  *parent* of our root.  NB, the lower ones can't have real ids
-;;  because they might well live in notes, which shouldn't become our target.
-;;Is it available?  Use it or recurse.  We must recurse thru our prefix.
-;;Recursing, use headlines?  Can't safely use ids, they might point
-;;anywhere. 
-;;Collect what to do.
-;;If there are any conflicts, report them.
-;;Otherwise create dblocks in all the places.  Create our ids if they
-;;don't already exist.
-;;Add a tag "stowed"
-;;org-use-property-inheritance or not?
-;;;_ , org-unstow-item
-(defun org-unstow-item ()
+;;;_ , org-stow-unstow-item
+;;$$WRITE ME
+;;$$TEST ME
+(defun org-stow-unstow-item ()
    "Unstow the current item.
 Ie, remove a dynamic copy of it, if there is one."
-   
+   ;;This might use the same code as `org-stow-item', except finding
+   ;;actions in a different way and setting different tags.  So factor
+   ;;that part out.
    (interactive)
    (let*
       ()
-      
-      ))
-;;Again find all the locations
-;;Erase our dblocks there (We own them or they'd appear as conflicts)
-;;Remove tag "stowed" (back to "stowable")
+      ;;Again find all the locations
+      ;;Erase our dblocks there (We own them or they'd appear as conflicts)
+
+      ;;Remove tag "stowed" (back to "stowable")
+      (org-toggle-tag "stowed"   'off)
+      (org-toggle-tag "stowable" 'on)))
+
 
 ;;;_ , org-stow-make-item-stowable 
 (defun org-stow-make-item-stowable ()
@@ -304,15 +660,37 @@ Ie, remove a dynamic copy of it, if there is one."
    
    (interactive)
    (let*
-      ()
-      
-      ;;Find its target
-      ;;Get that id and a prefix.
-      ;;Store that prefix in property stow-path, a multivalued property.
-      ;;Add a tag "stowable"
+      ;;$$IMPROVE ME Find the set of target files from file marks etc.
 
-      '(org-entry-put-multivalued-property pom property &rest values)
-      ))
+      ;;Interactively find the parent of its target.  We presume it's
+      ;;stored immediately underneath the target, since storing it as
+      ;;the target makes little sense.  Gives (path filename regexp
+      ;;position).
+      ((location
+	  (let ((org-refile-targets '((nil . (:maxlevel . 10))))
+		  (org-refile-use-outline-path 'full-file-path))
+	     (org-refile-get-location "Parent item: ")))
+	 ;;Split the path into a list.
+	 (path-raw
+	    (split-string 
+	       (car location) "/"))
+	 ;;Convert filename to foreslashes
+	 (filename-1
+	    (mapconcat
+	       #'identity
+	       (split-string (car path-raw) "\\\\")
+	       "/"))
+	 (path (cons filename-1 (cdr path-raw))))
+      
+      ;;Store path in multivalued property STOW-TO
+      (apply 
+	 #'org-entry-put-multivalued-property
+	 (point)
+	 "STOW-TO"
+	 path)
+      ;;Add a tag "stowable"
+      (org-toggle-tag "stowable" 'on)))
+
 
 ;;;_ , Add an item to a stowable subtree
 ;;;_ , Integration with org-choose
