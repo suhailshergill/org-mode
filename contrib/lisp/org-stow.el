@@ -556,6 +556,11 @@ append real headline to hidden-path."
       ((mark (org-find-olp location)))
       (set-buffer (marker-buffer mark))
       (goto-char mark)
+      (let
+	 ((pblock (org-get-property-block)))
+	 (when pblock 
+	    (goto-char (cdr pblock))
+	    (next-line)))
       (set-marker mark nil)))
 
 ;;;_ , Actions
