@@ -11,7 +11,7 @@ An example file with competing stowable items.
 ** Ordinary note
 *** What
 An ordinary note stowing just under the root of Target tree
-*** Headline A							     :stowed:
+*** Headline A							   :stowable:
     :PROPERTIES:
     :STOW-TO:  /home/tehom/projects/elisp/org-mode/testing/org-stow/examples/stowables-1.org Target%20tree 
     :ID:       36da67f8-3fbd-4d72-ae21-78942c2f44ec
@@ -31,7 +31,7 @@ Text of second note
 *** What
 Another note stowing just under the root of Target tree.  It has the
 same headline as Second note
-*** Headline B							     :stowed:
+*** Headline B							     :stowable:
     :PROPERTIES:
     :STOW-TO:  /home/tehom/projects/elisp/org-mode/testing/org-stow/examples/stowables-1.org Target%20tree 
     :ID:       264615d9-17d5-42bf-8a6e-1aeb7af9cca3
