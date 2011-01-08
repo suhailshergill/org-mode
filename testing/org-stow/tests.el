@@ -139,8 +139,42 @@
 ;;Check that the result is what we expect.
 ;;;_ , Find an item's children, both dblocks and real items
 ;;;_ , org-stow-item
+(emt:deftest-3
+   ((of 'org-stow-item)
+      (db-id org-stow:th:db-id))
+   (nil
+      (org-stow:th:in-buf "stowables-1.org"
+	 (emt:doc "Situation: In a file with our type of dynamic blocks.")
+	 (emt:doc "Operation: Stow the ordinary item.")
+	 (org-id-open "36da67f8-3fbd-4d72-ae21-78942c2f44ec")
+	 (org-stow-item)
+	 ;;Maybe use subtree text (org-end-of-subtree t t) instead.
+	 (emt:assert
+	    (emt:eq-persist-p #'equal 
+	       (buffer-substring-no-properties (point-min) (point-max))
+	       "dbid:aa4f964d-1dae-4b11-96ef-fc171e0d6f51"))
+
+	 (org-id-open "2aa5968e-8566-43b1-905c-fa602866230e")
+	 (org-stow-item)
+	 ;;Test again.
+
+	 ))
+
+   ;;Stow second item, then Note competing with second note.  Expect
+   ;;an error.
+   ;;Unstow second item, then stow Note competing with second
+   ;;note.
+
+   ;;Stow Note with hidden path, then Note with hidden path 2
+   ;;This should make paths
+
+   ;;Test stowing into another file, stowing by id, stowing by current buffer.
+   )
+
+
 ;;;_ , org-unstow-item
 ;;;_ , org-stow-make-item-stowable
+;;Needs its own file, and wildcard comparison.
 
 ;;;_. Footers
 ;;;_ , Provides
