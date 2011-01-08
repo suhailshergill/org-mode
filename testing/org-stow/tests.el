@@ -59,6 +59,16 @@
 	  :mutable t)
        (org-mode)
        ,@body))
+;;;_ , org-stow:th:id->tree-string
+(defun org-stow:th:id->tree-string (id)
+   "Return the buffer-substring of the tree at ID in current buffer."
+   
+   (save-excursion
+      (org-id-open id)
+      (let
+	 ((kill-ring '()))
+	 (org-copy-subtree)
+	 (car kill-ring))))
 
 
 ;;;_ , org-stow-get-item-copy
@@ -148,15 +158,20 @@
 	 (emt:doc "Operation: Stow the ordinary item.")
 	 (org-id-open "36da67f8-3fbd-4d72-ae21-78942c2f44ec")
 	 (org-stow-item)
-	 ;;Maybe use subtree text (org-end-of-subtree t t) instead.
 	 (emt:assert
 	    (emt:eq-persist-p #'equal 
-	       (buffer-substring-no-properties (point-min) (point-max))
+	       (org-stow:th:id->tree-string
+		  "6cebd1a3-435b-43c6-80f8-ea863cd57310")
 	       "dbid:aa4f964d-1dae-4b11-96ef-fc171e0d6f51"))
 
 	 (org-id-open "2aa5968e-8566-43b1-905c-fa602866230e")
 	 (org-stow-item)
-	 ;;Test again.
+	 (emt:assert
+	    (emt:eq-persist-p #'equal 
+	       (org-stow:th:id->tree-string
+		  "6cebd1a3-435b-43c6-80f8-ea863cd57310")
+	       "dbid:746766cf-4e19-4782-8dbd-052182260a34"))
+
 
 	 ))
 
@@ -174,7 +189,8 @@
 
 ;;;_ , org-unstow-item
 ;;;_ , org-stow-make-item-stowable
-;;Needs its own file, and wildcard comparison.
+;;Needs its own example file and wildcard comparison.  Saving the
+;;persisting value won't suffice for this.
 
 ;;;_. Footers
 ;;;_ , Provides
