@@ -103,50 +103,6 @@
 	       "dbid:169cba75-6164-4f25-8672-fa6b6c90989e")))))
 
 
-;;;_ , org-stow-dblock-action
-(emt:deftest-3
-   ((of 'org-stow-dblock-action)
-      (db-id org-stow:th:db-id))
-   (nil
-      (org-stow:th:in-buf "dyn-blocks.org"
-	 (emt:doc "Situation: In a file with our type of dynamic blocks.")
-	 (search-forward
-	    "stowed-into :source-id 7ff68f58-0115-45b2-8c3c-ef245b90081f")
-	 (emt:doc "Situation: Point is on the sole dynamic block.")
-	 (emt:doc "Operation: Find actions.")
-	 (emt:doc "Param: HEADLINES-SOUGHT contains (only) the
-   headline of the block.")
-	 (emt:doc "Param: ID is the id the dblock knows about.")
-	 (emt:doc "Response: nil, indicating no action needed.")
-	 (emt:assert
-	    (emt:eq-persist-p 
-	       #'equal 
-	       (org-stow-dblock-action
-		  '("Headline A")
-		  "7ff68f58-0115-45b2-8c3c-ef245b90081f")
-	       "dbid:78a627ba-2a39-4a8a-8ff7-823a221fe7f9"))))
-
-   (nil
-      (org-stow:th:in-buf "dyn-blocks.org"
-	 (emt:doc "Situation: In a file with our type of dynamic blocks.")
-	 (search-forward
-	    "stowed-into :source-id 7ff68f58-0115-45b2-8c3c-ef245b90081f")
-	 (emt:doc "Situation: Point is on the sole dynamic block.")
-	 (emt:doc "Operation: Find actions.")
-	 (emt:doc "Param: HEADLINES-SOUGHT contains (only) the
-   headline of the block.")
-	 (emt:doc "Param: ID is a different id than the dblock uses.")
-	 (emt:doc "Response: A splitting action.")
-	 (emt:assert
-	    (emt:eq-persist-p 
-	       #'equal 
-	       (org-stow-dblock-action
-		  '("Headline A")
-		  "7ff68f58-different-id")
-	       "dbid:78a627ba-2a39-4a8a-8ff7-823a221fe7f9"))))
-   )
-
-;;Check that the result is what we expect.
 ;;;_ , Find an item's children, both dblocks and real items
 ;;;_ , org-stow-item
 (emt:deftest-3
