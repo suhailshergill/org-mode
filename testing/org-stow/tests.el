@@ -54,11 +54,16 @@
    ""
    
    `(emtb:with-buf
-       (:file   ,filename
-	  :dir     org-stow:th:examples-dir
-	  :mutable t)
+       (:file           ,filename
+	  :dir          org-stow:th:examples-dir
+	  :visited-name 'tmp
+	  :mutable      t)
        (org-mode)
-       ,@body))
+       (let
+	  ((org-id-track-globally nil)
+	     (org-id-locations '())
+	     (org-id-files (list (buffer-file-name))))
+	  ,@body)))
 ;;;_ , org-stow:th:id->tree-string
 (defun org-stow:th:id->tree-string (id)
    "Return the buffer-substring of the tree at ID in current buffer."
@@ -120,6 +125,7 @@
 		  "6cebd1a3-435b-43c6-80f8-ea863cd57310")
 	       "dbid:aa4f964d-1dae-4b11-96ef-fc171e0d6f51"))
 
+	 (emt:doc "Operation: Stow a second item.")
 	 (org-id-open "2aa5968e-8566-43b1-905c-fa602866230e")
 	 (org-stow-item)
 	 (emt:assert
