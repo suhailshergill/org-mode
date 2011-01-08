@@ -552,8 +552,11 @@ append real headline to hidden-path."
    "Move point to target LOCATION."
    ;;Location's representation may change.  Path is fundamental, but
    ;;may be augmented.
-   (let
-      ((mark (org-find-olp location)))
+   (let*
+      (  (buf-p (string= (car location) "buf:"))
+	 (mark (if buf-p
+		  (org-find-olp (cdr location) t)
+		  (org-find-olp location))))
       (set-buffer (marker-buffer mark))
       (goto-char mark)
       (let
