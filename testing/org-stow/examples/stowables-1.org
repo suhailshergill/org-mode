@@ -1,0 +1,59 @@
+
+* Purpose
+An example file with competing stowable items.
+* Target tree
+
+
+* Stowables
+** Ordinary note
+*** What
+An ordinary note stowing just under the root of Target tree
+*** Headline A 							   :stowable:
+    :PROPERTIES:
+    :STOW-TO:  /home/tehom/projects/elisp/org-mode/testing/org-stow/examples/stowables-1.org Target%20tree 
+    :ID:       36da67f8-3fbd-4d72-ae21-78942c2f44ec
+    :END:
+Text of ordinary note
+** Second note
+*** What
+Another note stowing just under the root of Target tree.  It has a
+different headline than Ordinary note.
+*** Headline B 							   :stowable:
+    :PROPERTIES:
+    :STOW-TO:  /home/tehom/projects/elisp/org-mode/testing/org-stow/examples/stowables-1.org Target%20tree 
+    :ID:       2aa5968e-8566-43b1-905c-fa602866230e
+    :END:
+Text of second note
+** Note competing with second note
+*** What
+Another note stowing just under the root of Target tree.  It has the
+same headline as Second note
+*** Headline B							     :stowed:
+    :PROPERTIES:
+    :STOW-TO:  /home/tehom/projects/elisp/org-mode/testing/org-stow/examples/stowables-1.org Target%20tree 
+    :ID:       264615d9-17d5-42bf-8a6e-1aeb7af9cca3
+    :END:
+
+Text of note competing with second note
+
+** Note with hidden path
+*** What
+A note with a hidden path
+*** Headline A 							   :stowable:
+    :PROPERTIES:
+    :STOW-TO:  /home/tehom/projects/elisp/org-mode/testing/org-stow/examples/stowables-1.org Target%20tree 
+    :STOW-HIDDEN-PATH: Path%20A
+    :ID:       413e655b-9fe7-4b5d-8c47-5a7762b65475
+    :END:
+Text of note with hidden path
+** Note with hidden path 2
+*** What
+A note with a different hidden path
+*** Headline A 							   :stowable:
+    :PROPERTIES:
+    :STOW-TO:  /home/tehom/projects/elisp/org-mode/testing/org-stow/examples/stowables-1.org Target%20tree 
+    :STOW-HIDDEN-PATH: Path%20B
+    :ID:       12104842-95a5-479a-b05e-40c5466bc0c0
+    :END:
+Text of note with hidden path 2
+
