@@ -47,8 +47,9 @@
 	      (:constructor org-stow-make-source)
 	      (:conc-name org-stow-source->))
    "A source object"
-   (id   () :type symbol)
-   (headline () :type string))
+   (id          () :type symbol)
+   (hidden-path () :type (repeat string))
+   (headline    () :type string))
 ;;;_ , Constants
 ;;;_  . org-stow-unwanted-props
 (defconst org-stow-unwanted-props 
@@ -391,46 +392,60 @@ If target is not an item, return an empty list."
        (org-entry-get-multivalued-property (point) "STOW-TO")))
 
 ;;;_  . org-stow-source-at-point
-(defun org-stow-source-at-point (&optional nopath)
-   "Return a source object corresponding to item at point."
+(defun org-stow-source-at-point (&optional immediate)
+   "Return a source object corresponding to item at point.
+
+If IMMEDIATE is nil or not given, make headline field nil and
+append real headline to hidden-path."
    (let*
       (
 	 ;;The path from the target ancestor to the first target node
 	 ;;that's realized in the source.  Unused for now.
 	 (hidden-path
-	    (if nopath
-	       '()
-	       (org-entry-get-multivalued-property (point)
-		  "STOW-HIDDEN-PATH")))
+	    (org-entry-get-multivalued-property (point)
+	       "STOW-HIDDEN-PATH"))
 	 (id
 	    (org-id-get-create))
 	 (headline
-	    (nth 4 (org-heading-components))))
-      
-      ;;$$IMPROVE ME Account for hidden-path
+	    (nth 4 (org-heading-components)))
+	 (hidden-path
+	    (if immediate
+	       hidden-path
+	       (append hidden-path (list headline))))
+	 (headline
+	    (if immediate headline nil)))
+
       (org-stow-make-source 
 	 :id id
+	 :hidden-path hidden-path
 	 :headline headline)))
 ;;;_  . org-stow-source-children
 (defun org-stow-source-children (source)
    "Return a list of children of SOURCE"
    
-   ;;$$IMPROVE ME If there's a hidden path, instead strip the first
-   ;;item from it.
+   (let
+      ((hidden-path
+	  (org-stow-source->hidden-path source)))
+      (if hidden-path
+	 (list
+	    (org-stow-make-source 
+	       :id (org-stow-source->id source)
+	       :hidden-path (cdr hidden-path)
+	       :headline (car hidden-path)))
+	 (progn
+	    ;;Go to that item.
+	    (org-id-goto
+	       (org-stow-source->id source))
 
-   ;;Go to that item.
-   (org-id-goto
-      (org-stow-source->id source))
-
-   ;;Traverse the subtree
-   (let*
-      ((depth
-	  (org-reduced-level (org-current-level))))
-      (org-stow-map-single-level (1+ depth)
-	 #'(lambda ()
-	      (org-stow-source-at-point t))
-	 nil
-	 'tree)))
+	    ;;Traverse the subtree
+	    (let*
+	       ((depth
+		   (org-reduced-level (org-current-level))))
+	       (org-stow-map-single-level (1+ depth)
+		  #'(lambda ()
+		       (org-stow-source-at-point t))
+		  nil
+		  'tree))))))
 
 ;;Test by checking `org-stow-source-at-point' on the children.  And
 ;;`org-stow-source-at-point' to get the original argument, too.
@@ -440,7 +455,8 @@ If target is not an item, return an empty list."
 (defun org-stow-get-actions-item (source-list target)
    "Get a list of actions to stow SOURCE-LIST in a normal item"
 
-   ;;$$IMPROVE ME If any source has text for this item, error.
+   ;;$$IMPROVE ME If any source has text for this item and no hidden
+   ;;path, error.
    (let*
       ;;Expand each source to a list of its children
       ((source-children
@@ -471,7 +487,7 @@ If target is not an item, return an empty list."
 	 ;;`create-mirror'
 	 `((already-present
 	      ,(org-stow-target->path      target)
-	      ,(org-stow-source->id        src)
+	      ,(org-stow-target->depth     target)
 	      ,(org-stow-source->headline  src))))
       (let*
 	 ((params 
@@ -486,9 +502,9 @@ If target is not an item, return an empty list."
 	    ;;Since we have multiple sources, we must split the
 	    ;;subtree.
 	    `(dblock->item
-	       ,(org-stow-target->path target)
-	       ,source-id
-	       ,headline)
+		,(org-stow-target->path target)
+		,(org-stow-target->depth target)
+		,headline)
 	    (org-stow-get-actions-item 
 	       ;;The dblock's id indicates another source that
 	       ;;contributes to this subtree, so include it.
@@ -498,6 +514,13 @@ If target is not an item, return an empty list."
 		     :headline headline)
 		  source-list) 
 	       target)))))
+;;;_  . org-stow-target->depth
+(defun org-stow-target->depth (target)
+   ""
+   (+
+      (length (org-stow-target->path         target))
+      (length (org-stow-target->rv-virt-path target))
+      -1))
 ;;;_  . org-stow-get-actions-virtual
 ;;$$TEST ME with making nested stuff
 (defun org-stow-get-actions-virtual (source-list target)
@@ -505,16 +528,11 @@ If target is not an item, return an empty list."
    (if (= (length source-list) 1)
       (let
 	 ((src (car source-list)))
-	 ;;$$FIX ME Target is virtual, so path by itself will not
-	 ;;work.
 	 `((create-mirror
 	      ,(org-stow-target->path      target)
 	      ,(org-stow-source->id        src)
 	      ,(org-stow-source->headline  src)
-	      ,(+
-		  (length (org-stow-target->path         target))
-		  (length (org-stow-target->rv-virt-path target))
-		  -1))))
+	      ,(org-stow-target->depth     target))))
       
       (org-stow-get-actions-item source-list target)))
 
@@ -618,7 +636,8 @@ Ie, make it (a dynamic copy of it and its subtree) appear in another place."
       ((target-path
 	  ;;An path to the parent of the target.
 	  (org-entry-get-multivalued-property (point) "STOW-TO"))
-	 ;;$$IMPROVE ME  Check that item has a target-path
+	 ;;$$IMPROVE ME  Check that item has a target-path, otherwise
+	 ;;raise error.
 	 (source
 	    (org-stow-source-at-point))
 	 (target (org-stow-path->target target-path))
@@ -631,6 +650,7 @@ Ie, make it (a dynamic copy of it and its subtree) appear in another place."
 	 (apply #'org-stow-do-action act))
 
       ;;Mark this item "stowed".
+      (org-toggle-tag "stowable" 'off)
       (org-toggle-tag "stowed" 'on)))
 
 
@@ -660,7 +680,8 @@ Ie, remove a dynamic copy of it, if there is one."
    
    (interactive)
    (let*
-      ;;$$IMPROVE ME Find the set of target files from file marks etc.
+      ;;$$IMPROVE ME Find the set of target files from file marks,
+      ;;customizable variables, etc.
 
       ;;Interactively find the parent of its target.  We presume it's
       ;;stored immediately underneath the target, since storing it as
