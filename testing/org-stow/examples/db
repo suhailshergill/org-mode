@@ -1,45 +1,11 @@
-(("dbid:83a0ec41-f598-4091-b653-8bba0ef89c2c" correct-answer
-    (19743 59938 408452)
-    ("***" " "
-       #("Headline A" 0 10
-	   (org-category "dyn-blocks" face org-level-3 fontified t))
-       "\n" "    :PROPERTIES:\n" "    :" "SOURCE-ID" ": " "7ff68f58-0115-45b2-8c3c-ef245b90081f" "\n" "    :END:\n"
-       #("\n" 0 1
-	   (org-category "dyn-blocks" fontified t))))
-   ("dbid:169cba75-6164-4f25-8672-fa6b6c90989e" correct-answer
-      (19725 14967 247037)
-      #("\n* The target tree\n** Target 1\n\n#+BEGIN: stowed-into :id 7ff68f58-0115-45b2-8c3c-ef245b90081f :headline \"Headline A\"\n*** Headline A\n    :PROPERTIES:\n    :SOURCE-ID: 7ff68f58-0115-45b2-8c3c-ef245b90081f\n    :END:\n\n**** Note 1.1\n\nThis is the text of note 1.1\n#+END:\n\n* Notes\n** Note 1\n*** Headline A\n    :PROPERTIES:\n    :ID:       7ff68f58-0115-45b2-8c3c-ef245b90081f\n    :END:\n**** Note 1.1\nThis is the text of note 1.1\n** Note 2\n*** Headline A\n   :PROPERTIES:\n   :ID:       ba1797f3-c1ad-4ad8-b9a8-904038d68111\n   :example-prop: example-props-value\n   :END:\nThis is the text of note 2\n" 0 117 nil 117 120
-	  (read-only t)
-	  120 121
-	  (read-only t)
-	  121 131
-	  (read-only t fontified t face org-level-3 org-category "dyn-blocks")
-	  131 132
-	  (read-only t)
-	  132 149
-	  (read-only t)
-	  149 154
-	  (read-only t)
-	  154 163
-	  (read-only t)
-	  163 165
-	  (read-only t)
-	  165 201
-	  (read-only t)
-	  201 202
-	  (read-only t)
-	  202 212
-	  (read-only t)
-	  212 213
-	  (read-only t fontified t org-category "dyn-blocks")
-	  213 217
-	  (read-only t)
-	  217 218
-	  (read-only t)
-	  218 226
-	  (read-only t fontified t face org-level-4 org-category "dyn-blocks")
-	  226 227
-	  (read-only t)
-	  227 256
-	  (read-only t fontified t org-category "dyn-blocks")
-	  256 586 nil)))
+(("dbid:169cba75-6164-4f25-8672-fa6b6c90989e" correct-answer
+    (19752 51334 873777)
+    "\n* The target tree\n** Target 1\n\n#+BEGIN: stowed-into :source-id 7ff68f58-0115-45b2-8c3c-ef245b90081f :headline \"Headline A\" :depth 3\n*** Headline A\n    :PROPERTIES:\n    :SOURCE-ID: 7ff68f58-0115-45b2-8c3c-ef245b90081f\n    :END:\n\n**** Note 1.1\n\nThis is the text of note 1.1\n#+END:\n\n* Notes\n** Note 1\n*** Headline A\n    :PROPERTIES:\n    :ID:       7ff68f58-0115-45b2-8c3c-ef245b90081f\n    :END:\n**** Note 1.1\nThis is the text of note 1.1\n** Note 2\n*** Headline A\n   :PROPERTIES:\n   :ID:       ba1797f3-c1ad-4ad8-b9a8-904038d68111\n   :example-prop: example-props-value\n   :END:\nThis is the text of note 2\n")
+   ("dbid:83a0ec41-f598-4091-b653-8bba0ef89c2c" correct-answer
+      (19743 59938 408452)
+      ("***" " "
+	 #("Headline A" 0 10
+	     (org-category "dyn-blocks" face org-level-3 fontified t))
+	 "\n" "    :PROPERTIES:\n" "    :" "SOURCE-ID" ": " "7ff68f58-0115-45b2-8c3c-ef245b90081f" "\n" "    :END:\n"
+	 #("\n" 0 1
+	     (org-category "dyn-blocks" fontified t)))))
