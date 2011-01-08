@@ -2,13 +2,20 @@
 * Purpose
 An example file with competing stowable items.
 * Target tree
+#+BEGIN: stowed-into :source-id "36da67f8-3fbd-4d72-ae21-78942c2f44ec" :headline "Headline A" :depth 2
+
+#+END:
+
+  :PROPERTIES:
+  :ID:       6cebd1a3-435b-43c6-80f8-ea863cd57310
+  :END:
 
 
 * Stowables
 ** Ordinary note
 *** What
 An ordinary note stowing just under the root of Target tree
-*** Headline A 							   :stowable:
+*** Headline A							     :stowed:
     :PROPERTIES:
     :STOW-TO:  /home/tehom/projects/elisp/org-mode/testing/org-stow/examples/stowables-1.org Target%20tree 
     :ID:       36da67f8-3fbd-4d72-ae21-78942c2f44ec
