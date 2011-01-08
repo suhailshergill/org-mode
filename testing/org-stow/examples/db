@@ -1,60 +1,60 @@
 (("dbid:aa4f964d-1dae-4b11-96ef-fc171e0d6f51" correct-answer
-    (19752 55041 594534)
-    #("* Target tree\n  :PROPERTIES:\n  :ID:       6cebd1a3-435b-43c6-80f8-ea863cd57310\n  :END:\n#+BEGIN: stowed-into :source-id \"36da67f8-3fbd-4d72-ae21-78942c2f44ec\" :headline \"Headline A\" :depth 2\n\n#+END:\n" 0 2
-	(face org-level-1 org-category "stowables-1" fontified t)
+    (19752 60889 124770)
+    #("* Target tree\n  :PROPERTIES:\n  :ID:       6cebd1a3-435b-43c6-80f8-ea863cd57310\n  :END:\n\n#+BEGIN: stowed-into :source-id \"36da67f8-3fbd-4d72-ae21-78942c2f44ec\" :headline \"Headline A\" :depth 2\n\n#+END:\n" 0 2
+	(org-category "2507tVO" face org-level-1 fontified t)
 	2 13
-	(face org-level-1 org-category "stowables-1" fontified t)
+	(org-category "2507tVO" face org-level-1 fontified t)
 	13 14
-	(org-category "stowables-1" fontified t)
+	(org-category "2507tVO" fontified t)
 	14 28
-	(face org-special-keyword org-category "stowables-1" fontified t)
-	28 29
-	(org-category "stowables-1" fontified t)
-	29 31
-	(org-category "stowables-1" fontified t)
+	(org-category "2507tVO" face org-special-keyword fontified t)
+	28 31
+	(org-category "2507tVO" fontified t)
 	31 35
-	(face org-special-keyword org-category "stowables-1" fontified t)
+	(org-category "2507tVO" face org-special-keyword fontified t)
 	35 42
-	(org-category "stowables-1" fontified t)
+	(org-category "2507tVO" fontified t)
 	42 78
-	(face org-property-value org-category "stowables-1" fontified t)
+	(org-category "2507tVO" face org-property-value fontified t)
 	78 79
-	(org-category "stowables-1" fontified t)
+	(org-category "2507tVO" fontified t)
 	79 86
-	(face org-special-keyword org-category "stowables-1" fontified t)
+	(org-category "2507tVO" face org-special-keyword fontified t)
 	86 87
-	(org-category "stowables-1" fontified t)
-	87 96
+	(org-category "2507tVO" fontified t)
+	87 88
+	(org-category "2507tVO" fontified t)
+	88 97
 	(fontified nil)
-	96 107
+	97 108
 	(fontified nil)
-	107 108
+	108 109
 	(fontified nil)
-	108 118
+	109 119
 	(fontified nil)
-	118 119
+	119 120
 	(fontified nil)
-	119 157
+	120 158
 	(fontified nil)
-	157 158
+	158 159
 	(fontified nil)
-	158 167
+	159 168
 	(fontified nil)
-	167 168
+	168 169
 	(fontified nil)
-	168 180
+	169 181
 	(fontified nil)
-	180 181
+	181 182
 	(fontified nil)
-	181 187
-	(fontified nil)
-	187 188
+	182 188
 	(fontified nil)
 	188 189
 	(fontified nil)
-	189 191
+	189 190
 	(fontified nil)
-	191 198
+	190 192
+	(fontified nil)
+	192 199
 	(fontified nil)))
    ("dbid:169cba75-6164-4f25-8672-fa6b6c90989e" correct-answer
       (19752 51334 873777)
