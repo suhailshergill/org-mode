@@ -75,6 +75,16 @@
       
       (apply #'org-map-entries
 	 func match scope skipfunc other-skips)))
+;;;_  . org-stow-search-dblock-start
+(defun org-stow-search-dblock-start ()
+   "Search the start of the dblock point is in."
+   (unless
+      (looking-at org-dblock-start-re)
+      (re-search-backward org-dblock-start-re)))
+;;;_  . org-stow-search-dblock-end
+(defun org-stow-search-dblock-end ()
+   "Search the end of the dblock point is in."
+   (re-search-forward org-dblock-end-re nil t))
 
 ;;;_  . org-stow-dblock-params
 (defun org-stow-dblock-params ()
@@ -82,9 +92,7 @@
 The :name parameter is given as well.
 Assumes point is in a dblock."
    (save-excursion
-      (unless
-	 (looking-at org-dblock-start-re)
-	 (re-search-backward org-dblock-start-re))
+      (org-stow-search-dblock-start)
       (let
 	 (  (start (point))
 	    (name (org-no-properties (match-string 1)))
@@ -96,7 +104,7 @@ Assumes point is in a dblock."
 	       :start start
 	       :end
 	       (save-excursion
-		  (re-search-forward org-dblock-end-re nil t)
+		  (org-stow-search-dblock-end)
 		  (point)))
 	    raw-params))))
 ;;Test this on a known file
@@ -598,16 +606,17 @@ append real headline to hidden-path."
    ;;$$IMPROVE ME Assert that point is indeed within a dblock, ie
    ;;finding a dblock beginning from the end finds the start we found,
    ;;and vv.
+   ;;
    (let*
       (  (start
+	    ;;$$ENCAP ME
 	    (save-excursion
-	       ;;$$ENCAP ME
-	       (re-search-backward org-dblock-start-re)
+	       (org-stow-search-dblock-start)
 	       (point)))
 	 (end
 	    ;;$$ENCAP ME
 	    (save-excursion
-	       (re-search-forward org-dblock-end-re nil t)
+	       (org-stow-search-dblock-end)
 	       (point))))
       (delete-region start end)))
 ;;Test on a known file
