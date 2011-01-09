@@ -132,10 +132,8 @@
 	    (emt:eq-persist-p #'equal 
 	       (org-stow:th:id->tree-string
 		  "6cebd1a3-435b-43c6-80f8-ea863cd57310")
-	       "dbid:746766cf-4e19-4782-8dbd-052182260a34"))
-
-
-	 ))
+	       "dbid:746766cf-4e19-4782-8dbd-052182260a34"))))
+   
 
    ;;Stow second item, then Note competing with second note.  Expect
    ;;an error.
