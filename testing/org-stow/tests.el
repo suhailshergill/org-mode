@@ -109,13 +109,30 @@
 
 
 ;;;_ , Find an item's children, both dblocks and real items
+
+;;;_ , org-stow-goto-location
+(emt:deftest-3
+   ((of 'org-stow-goto-location))
+   (nil
+      (org-stow:th:in-buf "stowables-1.org"
+	 (emt:doc "Situation: In a buffer with known targets.")
+	 (emt:doc "Operation: Go to the position that path indicates.")
+	 (emt:doc "Param: Path is a buffer path")
+	 (org-stow-goto-location
+	    '("buf:" "Target tree"))
+	 (emt:assert
+	    (equal
+	       (org-id-get (point))
+	       "6cebd1a3-435b-43c6-80f8-ea863cd57310")))))
+
+
 ;;;_ , org-stow-item
 (emt:deftest-3
    ((of 'org-stow-item)
       (db-id org-stow:th:db-id))
    (nil
       (org-stow:th:in-buf "stowables-1.org"
-	 (emt:doc "Situation: In a file with our type of dynamic blocks.")
+	 (emt:doc "Situation: In a buffer with stowables and the target tree.")
 	 (emt:doc "Operation: Stow the ordinary item.")
 	 (org-id-open "36da67f8-3fbd-4d72-ae21-78942c2f44ec")
 	 (org-stow-item)
