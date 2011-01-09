@@ -1,61 +1,125 @@
-(("dbid:aa4f964d-1dae-4b11-96ef-fc171e0d6f51" correct-answer
-    (19752 60889 124770)
-    #("* Target tree\n  :PROPERTIES:\n  :ID:       6cebd1a3-435b-43c6-80f8-ea863cd57310\n  :END:\n\n#+BEGIN: stowed-into :source-id \"36da67f8-3fbd-4d72-ae21-78942c2f44ec\" :headline \"Headline A\" :depth 2\n\n#+END:\n" 0 2
-	(org-category "2507tVO" face org-level-1 fontified t)
+(("dbid:746766cf-4e19-4782-8dbd-052182260a34" correct-answer
+    (19753 14725 992708)
+    #("* Target tree\n  :PROPERTIES:\n  :ID:       6cebd1a3-435b-43c6-80f8-ea863cd57310\n  :END:\n\n** Headline A\n#+BEGIN: stowed-into :source-id \"2aa5968e-8566-43b1-905c-fa602866230e\" :headline \"Headline B\" :depth 2\n\n#+END:\n" 0 2
+	(org-category "2507vlE" face org-level-1 fontified t)
 	2 13
-	(org-category "2507tVO" face org-level-1 fontified t)
+	(org-category "2507vlE" face org-level-1 fontified t)
 	13 14
-	(org-category "2507tVO" fontified t)
+	(org-category "2507vlE" fontified t)
 	14 28
-	(org-category "2507tVO" face org-special-keyword fontified t)
+	(org-category "2507vlE" face org-special-keyword fontified t)
 	28 31
-	(org-category "2507tVO" fontified t)
+	(org-category "2507vlE" fontified t)
 	31 35
-	(org-category "2507tVO" face org-special-keyword fontified t)
+	(org-category "2507vlE" face org-special-keyword fontified t)
 	35 42
-	(org-category "2507tVO" fontified t)
+	(org-category "2507vlE" fontified t)
 	42 78
-	(org-category "2507tVO" face org-property-value fontified t)
+	(org-category "2507vlE" face org-property-value fontified t)
 	78 79
-	(org-category "2507tVO" fontified t)
+	(org-category "2507vlE" fontified t)
 	79 86
-	(org-category "2507tVO" face org-special-keyword fontified t)
+	(org-category "2507vlE" face org-special-keyword fontified t)
 	86 87
-	(org-category "2507tVO" fontified t)
+	(org-category "2507vlE" fontified t)
 	87 88
-	(org-category "2507tVO" fontified t)
-	88 97
+	(org-category "2507vlE" fontified t)
+	88 90
 	(fontified nil)
-	97 108
+	90 91
 	(fontified nil)
-	108 109
+	91 102
 	(fontified nil)
-	109 119
+	102 111
 	(fontified nil)
-	119 120
+	111 122
 	(fontified nil)
-	120 158
+	122 123
 	(fontified nil)
-	158 159
+	123 133
 	(fontified nil)
-	159 168
+	133 134
 	(fontified nil)
-	168 169
+	134 172
 	(fontified nil)
-	169 181
+	172 173
 	(fontified nil)
-	181 182
+	173 182
 	(fontified nil)
-	182 188
+	182 183
 	(fontified nil)
-	188 189
+	183 195
 	(fontified nil)
-	189 190
+	195 196
 	(fontified nil)
-	190 192
+	196 202
 	(fontified nil)
-	192 199
+	202 203
+	(fontified nil)
+	203 204
+	(fontified nil)
+	204 206
+	(fontified nil)
+	206 213
 	(fontified nil)))
+   ("dbid:aa4f964d-1dae-4b11-96ef-fc171e0d6f51" correct-answer
+      (19752 60889 124770)
+      #("* Target tree\n  :PROPERTIES:\n  :ID:       6cebd1a3-435b-43c6-80f8-ea863cd57310\n  :END:\n\n#+BEGIN: stowed-into :source-id \"36da67f8-3fbd-4d72-ae21-78942c2f44ec\" :headline \"Headline A\" :depth 2\n\n#+END:\n" 0 2
+	  (org-category "2507tVO" face org-level-1 fontified t)
+	  2 13
+	  (org-category "2507tVO" face org-level-1 fontified t)
+	  13 14
+	  (org-category "2507tVO" fontified t)
+	  14 28
+	  (org-category "2507tVO" face org-special-keyword fontified t)
+	  28 31
+	  (org-category "2507tVO" fontified t)
+	  31 35
+	  (org-category "2507tVO" face org-special-keyword fontified t)
+	  35 42
+	  (org-category "2507tVO" fontified t)
+	  42 78
+	  (org-category "2507tVO" face org-property-value fontified t)
+	  78 79
+	  (org-category "2507tVO" fontified t)
+	  79 86
+	  (org-category "2507tVO" face org-special-keyword fontified t)
+	  86 87
+	  (org-category "2507tVO" fontified t)
+	  87 88
+	  (org-category "2507tVO" fontified t)
+	  88 97
+	  (fontified nil)
+	  97 108
+	  (fontified nil)
+	  108 109
+	  (fontified nil)
+	  109 119
+	  (fontified nil)
+	  119 120
+	  (fontified nil)
+	  120 158
+	  (fontified nil)
+	  158 159
+	  (fontified nil)
+	  159 168
+	  (fontified nil)
+	  168 169
+	  (fontified nil)
+	  169 181
+	  (fontified nil)
+	  181 182
+	  (fontified nil)
+	  182 188
+	  (fontified nil)
+	  188 189
+	  (fontified nil)
+	  189 190
+	  (fontified nil)
+	  190 192
+	  (fontified nil)
+	  192 199
+	  (fontified nil)))
    ("dbid:169cba75-6164-4f25-8672-fa6b6c90989e" correct-answer
       (19752 51334 873777)
       "\n* The target tree\n** Target 1\n\n#+BEGIN: stowed-into :source-id 7ff68f58-0115-45b2-8c3c-ef245b90081f :headline \"Headline A\" :depth 3\n*** Headline A\n    :PROPERTIES:\n    :SOURCE-ID: 7ff68f58-0115-45b2-8c3c-ef245b90081f\n    :END:\n\n**** Note 1.1\n\nThis is the text of note 1.1\n#+END:\n\n* Notes\n** Note 1\n*** Headline A\n    :PROPERTIES:\n    :ID:       7ff68f58-0115-45b2-8c3c-ef245b90081f\n    :END:\n**** Note 1.1\nThis is the text of note 1.1\n** Note 2\n*** Headline A\n   :PROPERTIES:\n   :ID:       ba1797f3-c1ad-4ad8-b9a8-904038d68111\n   :example-prop: example-props-value\n   :END:\nThis is the text of note 2\n")
