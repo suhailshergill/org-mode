@@ -1,7 +1,8 @@
 
 * Purpose
 
-Examples to demonstrate node-finding for org-stow
+Examples to demonstrate node-finding for org-stow.  All targets and
+their descendants 
 
 * Targets
 ** No children, no hidden path
@@ -31,4 +32,17 @@ Examples to demonstrate node-finding for org-stow
 *** Child 1
     :PROPERTIES:
     :ID:       d7c3e867-a4ca-48ec-b946-aa60decb01d2
+    :END:
+
+** Two children, no hidden path
+   :PROPERTIES:
+   :ID:       fd09390d-89a5-4de2-ab7f-45e4c43b8b56
+   :END:
+*** Child 1
+    :PROPERTIES:
+    :ID:       f62ec6e2-7517-4500-88b6-5527dc011b30
+    :END:
+*** Child 2
+    :PROPERTIES:
+    :ID:       cd25360a-6423-475e-b1d8-33fbe0291850
     :END:

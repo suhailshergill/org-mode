@@ -144,6 +144,60 @@
 	    (emt:assert (equal (length children) 1))
 	    (emt:assert (equal (length grandchildren) 1))
 	    (emt:assert (equal greatgrandchildren nil)))
+
+	 (emt:doc "Situation: At an item with one child and no path.")
+	 (org-id-open "b10e878b-44ab-4d29-ba3c-627a3d598caf")
+	 (let*
+	    ((src (org-stow-source-at-point))
+	       (children
+		  (org-stow-source-children src))
+	       (grandchildren
+		  (org-stow-source-children (car children)))
+	       (greatgrandchildren
+		  (org-stow-source-children (car grandchildren))))
+	    
+	    (emt:doc "Next generation is length 1 because headline
+   starts out contributing one element to hidden-path")
+	    (emt:assert (equal (length children) 1))
+	    (emt:assert (equal (length grandchildren) 1))
+	    (emt:assert (equal greatgrandchildren nil)))
+
+	 (emt:doc "Situation: At an item with one child and a path.")
+	 (org-id-open "02890e58-cc5f-4f0a-a2b9-d5e8a617b0fc")
+	 (let*
+	    ((src (org-stow-source-at-point))
+	       (children
+		  (org-stow-source-children src))
+	       (grandchildren
+		  (org-stow-source-children (car children)))
+	       (greatgrandchildren
+		  (org-stow-source-children (car grandchildren)))
+	       (great^2grandchildren
+		  (org-stow-source-children (car greatgrandchildren))))
+	    
+	    (emt:doc "Next generation is length 1 because headline
+   starts out contributing one element to hidden-path")
+	    (emt:assert (equal (length children) 1))
+	    (emt:assert (equal (length grandchildren) 1))
+	    (emt:assert (equal (length greatgrandchildren) 1))
+	    (emt:assert (equal great^2grandchildren nil)))
+
+	 (emt:doc "Situation: At an item with two children and no path.")
+	 (org-id-open "fd09390d-89a5-4de2-ab7f-45e4c43b8b56")
+	 (let*
+	    ((src (org-stow-source-at-point))
+	       (children
+		  (org-stow-source-children src))
+	       (grandchildren
+		  (org-stow-source-children (car children)))
+	       (greatgrandchildren
+		  (org-stow-source-children (car grandchildren))))
+	    
+	    (emt:doc "Next generation is length 1 because headline
+   starts out contributing one element to hidden-path")
+	    (emt:assert (equal (length children) 1))
+	    (emt:assert (equal (length grandchildren) 2))
+	    (emt:assert (equal greatgrandchildren nil)))
 	 )))
 
 
