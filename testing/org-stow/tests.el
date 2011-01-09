@@ -108,14 +108,52 @@
 	       "dbid:169cba75-6164-4f25-8672-fa6b6c90989e")))))
 
 
-;;;_ , Find an item's children, both dblocks and real items
+;;;_ , org-stow-source-children
+(emt:deftest-3
+   ((of 'org-stow-source-children))
+   (nil
+      (org-stow:th:in-buf "find-items.org"
+	 (emt:doc "Situation: In a buffer with items of known id and children.")
+	 (emt:doc "Situation: At an item with no children, no path.")
+	 (org-id-open "bfbe7dbc-e3ba-4dd8-9803-65d667e42aaf")
+	 (let*
+	    ((src (org-stow-source-at-point))
+	       (children
+		  (org-stow-source-children src))
+	       (grandchildren
+		  (org-stow-source-children (car children))))
+	    
+	    (emt:doc "Next generation is length 1 because headline
+   starts out contributing one element to hidden-path")
+	    (emt:assert (equal (length children) 1))
+	    (emt:assert (equal grandchildren nil)))
+
+	 (emt:doc "Situation: At an item with no children but a path.")
+	 (org-id-open "23a98b6d-6f90-4808-9c34-0fbdf348fbd6")
+	 (let*
+	    ((src (org-stow-source-at-point))
+	       (children
+		  (org-stow-source-children src))
+	       (grandchildren
+		  (org-stow-source-children (car children)))
+	       (greatgrandchildren
+		  (org-stow-source-children (car grandchildren))))
+	    
+	    (emt:doc "Next generation is length 1 because headline
+   starts out contributing one element to hidden-path")
+	    (emt:assert (equal (length children) 1))
+	    (emt:assert (equal (length grandchildren) 1))
+	    (emt:assert (equal greatgrandchildren nil)))
+	 )))
+
+
 
 ;;;_ , org-stow-goto-location
 (emt:deftest-3
    ((of 'org-stow-goto-location))
    (nil
       (org-stow:th:in-buf "stowables-1.org"
-	 (emt:doc "Situation: In a buffer with known targets.")
+	 (emt:doc "Situation: In a buffer with items of known id and path.")
 	 (emt:doc "Operation: Go to the position that path indicates.")
 	 (emt:doc "Param: Path is a buffer path")
 	 (org-stow-goto-location

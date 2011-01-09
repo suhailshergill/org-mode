@@ -1,0 +1,34 @@
+
+* Purpose
+
+Examples to demonstrate node-finding for org-stow
+
+* Targets
+** No children, no hidden path
+   :PROPERTIES:
+   :ID:       bfbe7dbc-e3ba-4dd8-9803-65d667e42aaf
+   :END:
+
+** No children, a hidden path
+   :PROPERTIES:
+   :ID:       23a98b6d-6f90-4808-9c34-0fbdf348fbd6
+   :STOW-HIDDEN-PATH: Path%20A
+   :END:
+
+** One child, no hidden path
+   :PROPERTIES:
+   :ID:       b10e878b-44ab-4d29-ba3c-627a3d598caf
+   :END:
+*** Child 1
+    :PROPERTIES:
+    :ID:       08491de1-3368-496f-ab27-854180893885
+    :END:
+** One child and a hidden path
+   :PROPERTIES:
+   :ID:       02890e58-cc5f-4f0a-a2b9-d5e8a617b0fc
+   :STOW-HIDDEN-PATH: Path%20A
+   :END:
+*** Child 1
+    :PROPERTIES:
+    :ID:       d7c3e867-a4ca-48ec-b946-aa60decb01d2
+    :END:
