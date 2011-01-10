@@ -494,7 +494,7 @@ append real headline to hidden-path."
 	 ;;`dblock->item', zero or more `create-item', and
 	 ;;`create-mirror'
 	 `((already-present
-	      ,(org-stow-target->path      target)
+	      ,target
 	      ,(org-stow-target->depth     target)
 	      ,(org-stow-source->headline  src))))
       (let*
@@ -510,7 +510,7 @@ append real headline to hidden-path."
 	    ;;Since we have multiple sources, we must split the
 	    ;;subtree.
 	    `(dblock->item
-		,(org-stow-target->path target)
+		,target
 		,(org-stow-target->depth target)
 		,headline)
 	    (org-stow-get-actions-item 
@@ -537,7 +537,7 @@ append real headline to hidden-path."
       (let
 	 ((src (car source-list)))
 	 `((create-mirror
-	      ,(org-stow-target->path      target)
+	      ,target
 	      ,(org-stow-source->id        src)
 	      ,(org-stow-source->headline  src)
 	      ,(org-stow-target->depth     target))))
@@ -554,8 +554,8 @@ append real headline to hidden-path."
 	 (virtual #'org-stow-get-actions-virtual))
       source-list
       target))
-
-;;;_ , org-stow-goto-location
+;;;_ , Finding locations
+;;;_  . org-stow-goto-location
 (defun org-stow-goto-location (location)
    "Move point to target LOCATION."
    ;;Location's representation may change.  Path is fundamental, but
@@ -573,6 +573,17 @@ append real headline to hidden-path."
 	    (goto-char (cdr pblock))
 	    (next-line)))
       (set-marker mark nil)))
+;;;_  . org-stow-goto-target
+(defun org-stow-goto-target (target)
+   ""
+   
+   (let*
+      ()
+      ;;If it's a dblock, use car of rv-virt-path as dblock name and
+      ;;find that dblock.
+      ;;
+      (org-stow-goto-location (org-stow-target->path target))
+      ))
 
 ;;;_ , Actions
 ;;;_  . Individual actions
@@ -629,11 +640,10 @@ append real headline to hidden-path."
 ;;Test on a known file
 
 ;;;_  . org-stow-do-action
-;;$$RETHINK ME Maybe take target instead of location.
-(defun org-stow-do-action (governor location &rest args)
+(defun org-stow-do-action (governor target &rest args)
    "Dispatch an action"
    (save-excursion
-      (org-stow-goto-location location)
+      (org-stow-goto-target target)
       (apply
 	 (ecase governor
 	    (create-item   #'org-stow-create-item)
