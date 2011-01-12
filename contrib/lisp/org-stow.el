@@ -478,7 +478,8 @@ If it has no children, raise error."
 		     (let* 
 			((children (org-stow-source-children src)))
 			(unless children
-			   (error "Tree could not be stowed, couldn't
+			   (error 
+			      "Tree could not be stowed, couldn't \
 split it far enough."))
 			children))
 		
@@ -493,11 +494,11 @@ split it far enough."))
 		 (apply #'org-stow-get-actions group))
 	    child-groups))))
 ;;;_  . org-stow-get-actions-dblock+single
-(defun org-stow-get-actions-dblock+single (target headline id)
+(defun org-stow-get-actions-dblock+single (src target)
    ""
-   ;;$$IMPROVE ME Check whether ids match.  If not, replace the
-   ;;dblock.  It is possible for this to happen if a source item went
-   ;;away without being unstowed.
+   ;;$$IMPROVE ME Check whether ids match.  If not, replace the dblock
+   ;;even if there's no hidden path..  It is possible for this to
+   ;;happen if a source item went away without being unstowed.
       
    ;;$$IMPROVE ME if source has a hidden path, instead make
    ;;`dblock->item', zero or more `create-item', and
@@ -505,7 +506,7 @@ split it far enough."))
    `((already-present
 	,target
 	,(org-stow-target->depth     target)
-	headline)))
+	(org-stow-source->headline  src))))
 
 ;;;_  . org-stow-get-actions-dblock
 (defun org-stow-get-actions-dblock (source-list target)
@@ -514,10 +515,7 @@ split it far enough."))
    (if (= (length source-list) 1)
       (let
 	 ((src (car source-list)))
-	 (org-stow-get-actions-dblock+single
-	    target
-	    (org-stow-source->headline  src)
-	    (org-stow-source->id        src)))
+	 (org-stow-get-actions-dblock+single src target))
       (let*
 	 ((params 
 	     (save-excursion
