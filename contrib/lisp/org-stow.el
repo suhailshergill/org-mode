@@ -429,7 +429,8 @@ append real headline to hidden-path."
 	 :headline headline)))
 ;;;_  . org-stow-source-children
 (defun org-stow-source-children (source)
-   "Return a list of children of SOURCE"
+   "Return a list of children of SOURCE.  
+If it has no children, raise error."
    
    (let
       ((hidden-path
@@ -470,7 +471,17 @@ append real headline to hidden-path."
       ((source-children
 	  (apply #'nconc
 	     (mapcar
-		#'org-stow-source-children
+		#'(lambda (src)
+		     ;;$$IMPROVE ME Maybe also assert that src, being
+		     ;;an inner node, had no text.  Just if it has no
+		     ;;hidden path.
+		     (let* 
+			((children (org-stow-source-children src)))
+			(unless children
+			   (error "Tree could not be stowed, couldn't
+split it far enough."))
+			children))
+		
 		source-list)))
 	 (child-groups
 	    (org-stow-get-split-arglists source-children target)))
@@ -481,22 +492,32 @@ append real headline to hidden-path."
 	    #'(lambda (group)
 		 (apply #'org-stow-get-actions group))
 	    child-groups))))
+;;;_  . org-stow-get-actions-dblock+single
+(defun org-stow-get-actions-dblock+single (target headline id)
+   ""
+   ;;$$IMPROVE ME Check whether ids match.  If not, replace the
+   ;;dblock.  It is possible for this to happen if a source item went
+   ;;away without being unstowed.
+      
+   ;;$$IMPROVE ME if source has a hidden path, instead make
+   ;;`dblock->item', zero or more `create-item', and
+   ;;`create-mirror'
+   `((already-present
+	,target
+	,(org-stow-target->depth     target)
+	headline)))
 
 ;;;_  . org-stow-get-actions-dblock
 (defun org-stow-get-actions-dblock (source-list target)
    "Get a list of actions to stow SOURCE-LIST in a dblock"
    
-   
    (if (= (length source-list) 1)
       (let
 	 ((src (car source-list)))
-	 ;;$$IMPROVE ME if source has a hidden path, instead make
-	 ;;`dblock->item', zero or more `create-item', and
-	 ;;`create-mirror'
-	 `((already-present
-	      ,target
-	      ,(org-stow-target->depth     target)
-	      ,(org-stow-source->headline  src))))
+	 (org-stow-get-actions-dblock+single
+	    target
+	    (org-stow-source->headline  src)
+	    (org-stow-source->id        src)))
       (let*
 	 ((params 
 	     (save-excursion
@@ -506,22 +527,30 @@ append real headline to hidden-path."
 	    
 	    (source-id (plist-get params :source-id))
 	    (headline  (plist-get params :headline)))
-	 (cons
-	    ;;Since we have multiple sources, we must split the
-	    ;;subtree.
-	    `(dblock->item
-		,target
-		,(org-stow-target->depth target)
-		,headline)
-	    (org-stow-get-actions-item 
-	       ;;The dblock's id indicates another source that
-	       ;;contributes to this subtree, so include it.
-	       (cons
-		  (org-stow-make-source 
-		     :id source-id
-		     :headline headline)
-		  source-list) 
-	       target)))))
+	 (if (= (length source-list) 0)
+	    ;;If we were called with empty SOURCE-LIST, which
+	    ;;sometimes happens, then we know the tree needs no
+	    ;;splitting or other action.
+	    '()
+	    (cons
+	       ;;Since we have multiple sources, we must split the
+	       ;;subtree.
+	       `(dblock->item
+		   ,target
+		   ,(org-stow-target->depth target)
+		   ,headline)
+	       (org-stow-get-actions-item 
+		  ;;$$IMPROVE ME if id is the same as an existing
+		  ;;source, don't add as a new source.
+
+		  ;;The dblock's id indicates another source that
+		  ;;contributes to this subtree, so include it.
+		  (cons
+		     (org-stow-make-source 
+			:id source-id
+			:headline headline)
+		     source-list) 
+		  target))))))
 ;;;_  . org-stow-target->depth
 (defun org-stow-target->depth (target)
    ""
@@ -578,12 +607,42 @@ append real headline to hidden-path."
    ""
    
    (let*
-      ()
-      ;;If it's a dblock, use car of rv-virt-path as dblock name and
-      ;;find that dblock.
-      ;;
-      (org-stow-goto-location (org-stow-target->path target))
-      ))
+      (  (type (org-stow-target->type target))
+	 (dblock-p (eq type 'dblock))
+	 (rv-virt-path
+	    (org-stow-target->rv-virt-path target))
+	 (dheadline
+	    (if (eq type 'dblock)
+	       (car rv-virt-path)
+	       nil))
+	 (rv-virt-path
+	    (if (not (eq type 'item))
+	       (cdr rv-virt-path)
+	       rv-virt-path))
+	 (path
+	    (append
+	       (org-stow-target->path target)
+	       (reverse rv-virt-path)))
+	 (pt nil))
+      
+      (org-stow-goto-location path)
+      ;;Now find the dblock, if applicable.
+      (when (eq type 'dblock)
+	 (org-map-dblocks
+	    #'(lambda ()
+		 (let* 
+		    ((params
+			(org-stow-dblock-params)))
+		    ;;If a dblock matches, we'll use its position as
+		    ;;point.
+		    (when
+		       (equal
+			  (plist-get params :headline)
+			  dheadline)
+		       (setq pt (point))))))
+	 (when pt (goto-char pt)))))
+
+
 
 ;;;_ , Actions
 ;;;_  . Individual actions
