@@ -511,28 +511,32 @@ split it far enough."))
 ;;;_  . org-stow-get-actions-dblock
 (defun org-stow-get-actions-dblock (source-list target)
    "Get a list of actions to stow SOURCE-LIST in a dblock"
-   
-   (if (= (length source-list) 1)
-      (let
-	 ((src (car source-list)))
-	 (org-stow-get-actions-dblock+single src target))
-      (let*
-	 ((params 
-	     (save-excursion
-		(org-stow-goto-location 
-		   (org-stow-target->path target))
-		(org-stow-dblock-params)))
+   (let*
+      ((params 
+	  (save-excursion
+	     (org-stow-goto-location 
+		(org-stow-target->path target))
+	     (org-stow-dblock-params)))
 	    
-	    (source-id (plist-get params :source-id))
-	    (headline  (plist-get params :headline)))
-	 (if (= (length source-list) 0)
-	    ;;If we were called with empty SOURCE-LIST, which
-	    ;;sometimes happens, then we know the tree needs no
-	    ;;splitting or other action.
-	    '()
+	 (source-id (plist-get params :source-id))
+	 (headline  (plist-get params :headline)))
+      (if (= (length source-list) 0)
+	 ;;If we were called with empty SOURCE-LIST, which
+	 ;;sometimes happens, then we know the tree needs no
+	 ;;splitting or other action.  
+	 '()
+	 ;;If we were called with singleton source and it matches the
+	 ;;dblock source, then we're just tidying up.
+	 (if (and
+		(= (length source-list) 1)
+		(equal source-id 
+		   (org-stow-source->id (car source-list))))
+	    (org-stow-get-actions-dblock+single 
+	       (car source-list)
+	       target)
+	    
+	    ;;Otherwise we must split the subtree.
 	    (cons
-	       ;;Since we have multiple sources, we must split the
-	       ;;subtree.
 	       `(dblock->item
 		   ,target
 		   ,(org-stow-target->depth target)
