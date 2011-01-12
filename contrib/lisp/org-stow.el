@@ -606,7 +606,6 @@ split it far enough."))
    
    (let*
       (  (type (org-stow-target->type target))
-	 (dblock-p (eq type 'dblock))
 	 (rv-virt-path
 	    (org-stow-target->rv-virt-path target))
 	 (dheadline
@@ -638,7 +637,11 @@ split it far enough."))
 			  (plist-get params :headline)
 			  dheadline)
 		       (setq pt (point))))))
-	 (when pt (goto-char pt)))))
+	 (when pt (goto-char pt)))
+      ;;Otherwise find a place after the end of the subtree
+      (when (eq type 'virtual)
+	 (org-end-of-subtree))))
+
 
 
 
