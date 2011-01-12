@@ -520,22 +520,24 @@ split it far enough."))
 	    
 	 (source-id (plist-get params :source-id))
 	 (headline  (plist-get params :headline)))
-      (if (= (length source-list) 0)
+      (cond 
 	 ;;If we were called with empty SOURCE-LIST, which
 	 ;;sometimes happens, then we know the tree needs no
 	 ;;splitting or other action.  
-	 '()
+	 ((= (length source-list) 0)
+	    '())
+
 	 ;;If we were called with singleton source and it matches the
 	 ;;dblock source, then we're just tidying up.
-	 (if (and
-		(= (length source-list) 1)
-		(equal source-id 
-		   (org-stow-source->id (car source-list))))
+	 ((and
+	     (= (length source-list) 1)
+	     (equal source-id 
+		(org-stow-source->id (car source-list))))
 	    (org-stow-get-actions-dblock+single 
 	       (car source-list)
-	       target)
-	    
-	    ;;Otherwise we must split the subtree.
+	       target))
+	 ;;Otherwise we must split the subtree.
+	 (t
 	    (cons
 	       `(dblock->item
 		   ,target
