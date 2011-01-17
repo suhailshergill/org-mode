@@ -742,7 +742,7 @@ Ie, make it (a dynamic copy of it and its subtree) appear in another place."
       (dolist (act actions)
 	 (apply #'org-stow-do-action act))
 
-      ;;Mark this item "stowed".
+      ;;Adjust tags.
       (org-toggle-tag "stowable" 'off)
       (org-toggle-tag "stowed" 'on)))
 
@@ -751,9 +751,7 @@ Ie, make it (a dynamic copy of it and its subtree) appear in another place."
 (defun org-stow-unstow-item ()
    "Unstow the current item.
 Ie, remove a dynamic copy of it, if there is one."
-   ;;This might use the same code as `org-stow-item', except finding
-   ;;actions in a different way and setting different tags.  So factor
-   ;;that part out.
+
    (interactive)
    (let
       ((target-path
@@ -781,8 +779,8 @@ Ie, remove a dynamic copy of it, if there is one."
 	    #'(lambda ()
 		 (let
 		    ((params (org-stow-dblock-params)))
-		    ;;Erase the dblock if it points to any id in
-		    ;;source subtree
+		    ;;If the dblock's source-id points to any id in
+		    ;;source subtree, arrange to erase it
 		    (when
 		       (member
 			  (plist-get params :source-id)
@@ -796,7 +794,7 @@ Ie, remove a dynamic copy of it, if there is one."
 				(make-marker) 
 				(plist-get params :end)))
 			  regions-to-remove)))))
-	 ;;
+	 ;;Actually erase those dblocks.
 	 (dolist (mark-pair regions-to-remove)
 	    (delete-region
 	       (first mark-pair)
@@ -805,7 +803,7 @@ Ie, remove a dynamic copy of it, if there is one."
 	    (set-marker (first  mark-pair) nil)
 	    (set-marker (second mark-pair) nil)))
       
-      ;;Remove tag "stowed" (back to "stowable")
+      ;;Adjust tags.
       (org-toggle-tag "stowed"   'off)
       (org-toggle-tag "stowable" 'on)))
 
@@ -845,7 +843,7 @@ Ie, remove a dynamic copy of it, if there is one."
 	 (point)
 	 "STOW-TO"
 	 path)
-      ;;Add a tag "stowable"
+      ;;Adjust tags.
       (org-toggle-tag "stowable" 'on)))
 
 
