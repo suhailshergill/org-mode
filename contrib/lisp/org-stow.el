@@ -748,8 +748,6 @@ Ie, make it (a dynamic copy of it and its subtree) appear in another place."
 
 
 ;;;_ , org-stow-unstow-item
-;;$$WRITE ME
-;;$$TEST ME
 (defun org-stow-unstow-item ()
    "Unstow the current item.
 Ie, remove a dynamic copy of it, if there is one."
@@ -757,11 +755,56 @@ Ie, remove a dynamic copy of it, if there is one."
    ;;actions in a different way and setting different tags.  So factor
    ;;that part out.
    (interactive)
-   (let*
-      ()
-      ;;Again find all the locations
-      ;;Erase our dblocks there (We own them or they'd appear as conflicts)
+   (let
+      ((target-path
+	  ;;An path to the parent of the target.
+	  (org-entry-get-multivalued-property (point) "STOW-TO"))
+	 (ids '())
+	 (regions-to-remove '()))
+      
+      ;;Collect all the ids in this tree
+      (org-map-entries 
+	 #'(lambda ()
+	      (let
+		 ((id
+		     (org-entry-get (point) "ID")))
+		 (push id ids)))
+	 nil
+	 'tree)
 
+      (save-excursion
+	 ;;Go to the target
+	 (org-stow-goto-location target-path)
+      
+	 ;;Visit every dblock in it
+	 (org-map-dblocks
+	    #'(lambda ()
+		 (let
+		    ((params (org-stow-dblock-params)))
+		    ;;Erase the dblock if it points to any id in
+		    ;;source subtree
+		    (when
+		       (member
+			  (plist-get params :source-id)
+			  ids)
+		       (push
+			  (list 
+			     (set-marker 
+				(make-marker)
+				(plist-get params :start))
+			     (set-marker 
+				(make-marker) 
+				(plist-get params :end)))
+			  regions-to-remove)))))
+	 ;;
+	 (dolist (mark-pair regions-to-remove)
+	    (delete-region
+	       (first mark-pair)
+	       (second mark-pair))
+
+	    (set-marker (first  mark-pair) nil)
+	    (set-marker (second mark-pair) nil)))
+      
       ;;Remove tag "stowed" (back to "stowable")
       (org-toggle-tag "stowed"   'off)
       (org-toggle-tag "stowable" 'on)))
