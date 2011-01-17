@@ -264,18 +264,19 @@
 	       (org-stow-item)))
 	 
 	 (emt:doc "Operation: Unstow the second ordinary item.")
-	 (emt:doc "NOT IMPLEMENTED.")
+	 (org-stow-unstow-item)
+	 ;;Back to original buffer
 
 	 (emt:doc "Operation: Again try to stow the note competing
 	 with second note.")
-	 '(progn
-	     (org-id-open "264615d9-17d5-42bf-8a6e-1aeb7af9cca3")
-	     (org-stow-item)
-	     (emt:assert
-		(emt:eq-persist-p #'equal 
-		   (org-stow:th:id->tree-string
-		      "6cebd1a3-435b-43c6-80f8-ea863cd57310")
-		   "dbid:f53810d7-ab9d-4786-b035-e0ebe6ce7f30")))
+	 (progn
+	    (org-id-open "264615d9-17d5-42bf-8a6e-1aeb7af9cca3")
+	    (org-stow-item)
+	    (emt:assert
+	       (emt:eq-persist-p #'equal 
+		  (org-stow:th:id->tree-string
+		     "6cebd1a3-435b-43c6-80f8-ea863cd57310")
+		  "dbid:f53810d7-ab9d-4786-b035-e0ebe6ce7f30")))
 
 
 	 ))
