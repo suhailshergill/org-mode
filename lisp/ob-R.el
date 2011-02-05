@@ -223,6 +223,17 @@ current code buffer."
 
 (defvar org-babel-R-write-object-command "{function(object, transfer.file) {object;invisible(if(inherits(try(write.table(object, file=transfer.file, sep=\"\\t\", na=\"nil\",row.names=%s, col.names=%s, quote=FALSE), silent=TRUE),\"try-error\")) {if(!file.exists(transfer.file)) file.create(transfer.file)})}}(object=%s, transfer.file=\"%s\")")
 
+
+(defun org-babel-R-with-exception-signal (body)
+  "Wrap body with exception-signalling code."
+  (concat
+   "tryCatch({"
+   (org-babel-chomp body)
+   "}, error=function(e) "
+   "paste(\""
+   org-babel-session-error-value
+   "\", sub(\"\\\\n\", \" \", e)))"))
+
 (defun org-babel-R-evaluate
   (session body result-type column-names-p row-names-p)
   "Evaluate R code in BODY."
@@ -259,10 +270,19 @@ last statement in BODY, as elisp."
 If RESULT-TYPE equals 'output then return standard output as a
 string. If RESULT-TYPE equals 'value then return the value of the
 last statement in BODY, as elisp."
+  ((lambda (result)
+     (progn
+       (and (member "R" org-babel-session-error-langs)
+	    (stringp result)
+	    (string-match (org-babel-session-error-regexp) result)
+	    (org-babel-eval-error-notify
+	     (match-string 1 result) (match-string 2 result)))
+       result))
   (case result-type
     (value
      (with-temp-buffer
-       (insert (org-babel-chomp body))
+       (insert (if (member "R" org-babel-session-error-langs)
+		   (org-babel-R-with-exception-signal body) body))
        (let ((ess-local-process-name
 	      (process-name (get-buffer-process session))))
 	 (ess-eval-buffer nil)))
@@ -291,10 +311,15 @@ last statement in BODY, as elisp."
 		     (substring line (match-end 1))
 		   line))
 	       (org-babel-comint-with-output (session org-babel-R-eoe-output)
-		 (insert (mapconcat #'org-babel-chomp
-				    (list body org-babel-R-eoe-indicator)
-				    "\n"))
-		 (inferior-ess-send-input)))))) "\n"))))
+		 (insert
+		  (mapconcat #'identity
+			     (list
+			      (if (member "R" org-babel-session-error-langs)
+				  (org-babel-R-with-exception-signal body)
+				body)
+			      org-babel-R-eoe-indicator)
+			     "\n"))
+		 (inferior-ess-send-input)))))) "\n")))))
 
 (defun org-babel-R-process-value-result (result column-names-p)
   "R-specific processing of return value.
