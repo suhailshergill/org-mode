@@ -212,12 +212,8 @@ last statement in BODY, as elisp."
 			       (if (member "pp" result-params)
 				   org-babel-python-pp-wrapper-method
 				 org-babel-python-wrapper-method)
-			       (mapconcat
-				(lambda (line) (format "\t%s" line))
-				(split-string
-				 (org-remove-indentation
-				  (org-babel-trim body))
-				 "[\r\n]") "\n")
+			       (org-babel-python-indent body)
+			       
 			       (org-babel-process-file-name tmp-file 'noquote))))
 	     ((lambda (raw)
 		(if (or (member "code" result-params)
@@ -279,6 +275,17 @@ last statement in BODY, as elisp."
   (if (string-match "^'\\([^\000]+\\)'$" string)
       (match-string 1 string)
     string))
+
+(defconst org-babel-python-indentation "    ")
+
+(defun org-babel-python-indent (string)
+  "Indent python code by one level"
+  (mapconcat
+   (lambda (line) (format "%s%s" org-babel-python-indentation line))
+   (split-string
+    (org-remove-indentation
+     (org-babel-trim string))
+    "[\r\n]") "\n"))
 
 (provide 'ob-python)
 
