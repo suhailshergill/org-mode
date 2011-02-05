@@ -186,6 +186,14 @@ def main():
 
 open('%s', 'w').write( pprint.pformat(main()) )")
 
+(defun org-babel-python-with-exception-signal (body)
+  "Wrap body with exception-signalling code."
+  (format
+   "try:\n%s\nexcept Exception, e:\n%s"
+   (org-babel-python-indent body)
+   (org-babel-python-indent
+    (format "'%s %%s' %% e" org-babel-session-error-value))))
+
 (defun org-babel-python-evaluate
   (session body &optional result-type result-params preamble)
   "Evaluate BODY as python code."
@@ -213,7 +221,6 @@ last statement in BODY, as elisp."
 				   org-babel-python-pp-wrapper-method
 				 org-babel-python-wrapper-method)
 			       (org-babel-python-indent body)
-			       
 			       (org-babel-process-file-name tmp-file 'noquote))))
 	     ((lambda (raw)
 		(if (or (member "code" result-params)
@@ -241,8 +248,21 @@ last statement in BODY, as elisp."
 			   (org-babel-process-file-name tmp-file 'noquote))))))
 	 (input-body (body)
 		     (mapc (lambda (statement) (insert statement) (comint-send-input))
-			   (split-string (org-babel-trim body) "[\r\n]+"))
-		     (comint-send-input) (comint-send-input)))
+			   (split-string
+			    (org-babel-trim
+			     (if (member "python" org-babel-session-error-langs)
+				 (org-babel-python-with-exception-signal body)
+			       body))
+		 "[\r\n]+"))
+	  (comint-send-input) (comint-send-input)))
+    ((lambda (result)
+     (progn
+       (and (member "python" org-babel-session-error-langs)
+	    (stringp result)
+	    (string-match (org-babel-session-error-regexp) result)
+	    (org-babel-eval-error-notify
+	     (match-string 1 result) (match-string 2 result)))
+       result))
     (case result-type
       (output
        (mapconcat
@@ -268,7 +288,7 @@ last statement in BODY, as elisp."
 	      (comint-send-input) (comint-send-input)
 	      (insert org-babel-python-eoe-indicator)
 	      (comint-send-input)))
-	  (org-babel-eval-read-file tmp-file)))))))
+	  (org-babel-eval-read-file tmp-file))))))))
 
 (defun org-babel-python-read-string (string)
   "Strip 's from around python string"
