@@ -218,8 +218,10 @@ The id property, if it exists, will be changed to source-id."
 ;;;_ , Making sources and targets
 ;;;_  . org-stow-apair
 (deftype org-stow-apair ()
-   ""
-   '(list string (repeat org-stow-source) (or null org-stow-target)))
+   "A pair associating headline to target and sources"
+   (if (require 'emtest/testhelp/deep-type-checker nil t)
+      '(list string (repeat org-stow-source) (or null org-stow-target))
+      't))
 ;;;_  . org-stow-get-split-arglists
 (defun org-stow-get-split-arglists (sources target-parent)
    "Return a list of data each suitable for `org-stow-get-actions-aux'.
